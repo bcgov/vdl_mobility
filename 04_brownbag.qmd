@@ -1,0 +1,188 @@
+---
+title: Occupational Mobility and Structured Reallocation
+author: Richard Martin
+format:
+  revealjs:
+    height: 720
+    math: mathjax
+    slide-number: true
+    theme: simple
+    transition: fade
+    width: 1280
+---
+
+# Motivation
+
+## Core Question
+
+How do labour markets reallocate workers when occupational demand
+changes?
+
+------------------------------------------------------------------------
+
+## The Identification Problem
+
+Observed flows reflect:
+
+-   Demand shifts (origin contraction / destination expansion)
+-   Transition costs (distance in occupational space)
+
+**Challenge:** Raw flows confound both forces.
+
+------------------------------------------------------------------------
+
+## Why Raw Transitions Are Not Enough
+
+Because expanding occupations mechanically receive inflows, transition
+frequencies alone do not reveal mobility frictions.
+
+(Insert observed transition heatmap here)
+
+------------------------------------------------------------------------
+
+# Framework Intuition
+
+## Conditioning on Marginals
+
+We impose:
+
+-   Origin employment totals (2016)
+-   Destination employment totals (2021)
+
+Distance can explain only **who moves where**, not occupational growth.
+
+(Diagram: two employment vectors with arrows between them)
+
+------------------------------------------------------------------------
+
+## Transport Structure
+
+Under entropic optimal transport:
+
+$$
+P_{ij} \propto \exp(-C_{ij}/\varepsilon)
+$$
+
+Flows decline smoothly with occupational distance.
+
+------------------------------------------------------------------------
+
+## Isn't This Just Gravity?
+
+**Gravity:** - Estimates origin and destination fixed effects.
+
+**Transport:** - Imposes observed marginals exactly. - Distance explains
+only bilateral substitution patterns.
+
+------------------------------------------------------------------------
+
+# Competing Distance Metrics
+
+## Two Hypotheses About Frictions
+
+1.  Continuous similarity in skills and abilities.
+2.  Institutional and hierarchical segmentation.
+
+------------------------------------------------------------------------
+
+## Skill Distance
+
+-   Constructed from O\*NET descriptors.
+-   PCA-reduced skill space.
+-   Continuous cost geometry.
+
+(Insert skill heatmap here)
+
+------------------------------------------------------------------------
+
+## Hierarchical Distance
+
+-   Derived from NOC taxonomy.
+-   Discrete plateaus.
+-   Encodes institutional and credential boundaries.
+
+(Insert hierarchical heatmap here)
+
+------------------------------------------------------------------------
+
+## What They Imply
+
+-   Skill distance → smooth substitution patterns.
+-   Hierarchical distance → sharp boundaries and clustering.
+
+------------------------------------------------------------------------
+
+# Education Timing
+
+## Why Timing Matters
+
+Two regimes:
+
+-   **Pre-2016 education** → human capital fixed.
+-   **Inter-census education (2016--2021)** → human capital shifts.
+
+(Diagram: fixed position vs shifted position in cost space)
+
+------------------------------------------------------------------------
+
+## Structural Expectation
+
+Transport should align with mobility primarily in the pre-2016 education
+group.
+
+For inter-census education, transitions reflect entry into newly
+feasible occupations.
+
+------------------------------------------------------------------------
+
+# Calibration
+
+## Scale and Identification
+
+Only the ratio $C / \varepsilon$ is identified.
+
+Distance matrices operate on different numerical scales.
+
+------------------------------------------------------------------------
+
+## Percentile Anchoring
+
+-   Select percentiles of non-maximal hierarchical distances (25, 50,
+    75).
+-   Map to unconditional percentiles.
+-   Apply same percentiles to skill distance.
+
+(Diagram of cost distributions with anchors highlighted)
+
+------------------------------------------------------------------------
+
+# What Would Falsify This?
+
+The framework would be challenged if:
+
+-   Flows do not decline with distance.
+-   Fit is unstable across $\varepsilon$.
+-   Timing regimes show no structural differences.
+-   Distance metrics perform indistinguishably poorly.
+
+------------------------------------------------------------------------
+
+# Open Design Questions
+
+Where should this break?
+
+-   Is conditioning on marginals too restrictive?
+-   Is percentile anchoring reasonable?
+-   Is KL gating interpretable?
+-   Is this substantively different from gravity?
+
+------------------------------------------------------------------------
+
+# Discussion
+
+I welcome feedback on:
+
+-   Identification logic
+-   Distance construction
+-   Calibration strategy
+-   Alternative interpretations
