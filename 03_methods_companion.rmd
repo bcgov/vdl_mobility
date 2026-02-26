@@ -1,0 +1,799 @@
+---
+title: Occupational Distance and Labour-Market Reallocation
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    self_contained: true
+---
+
+Overview
+=====================================
+
+#### Purpose
+
+This companion documents the construction, calibration, and diagnostic evaluation underlying the occupational mobility analysis. It provides technical detail on distance metrics, educational concentration measures, and transport calibration procedures that support the empirical tests presented in the main paper.
+
+#### Contents
+
+- **Skill distance**: O*NET-based occupational skill vectors, dimensionality reduction via PCA, and the resulting continuous distance matrix.
+
+- **Hierarchical distance**: Taxonomy-based discrete distances derived from the NOC structure, including TEER-based vertical differentiation and comparison to skill geometry.
+
+- **Destination education gating intensity**: A size-adjusted measure of concentration in educational inflows into occupations, capturing heterogeneity in credential-linked entry barriers.
+
+- **Origin education specificity**: A size-adjusted measure of concentration in occupational outcomes across fields of study, capturing heterogeneity in supply-side specialization.
+
+- **Transport calibration**: Identification and normalization of the entropy regularization parameter ($\varepsilon$), including percentile-based anchoring across distance metrics.
+
+- **Model evaluation**: Diagnostic assessment of exponential structure, sensitivity to calibration choices, and robustness of substitution patterns.
+
+#### Conceptual Structure
+
+Destination gating and origin specificity characterize complementary dimensions of the same allocation problem:
+
+- Destination gating reflects how narrowly occupations draw from educational pipelines.
+
+- Origin specificity reflects how narrowly fields of study channel graduates into occupations.
+
+Within the equilibrium transport framework, these indices capture heterogeneity in frictions shaping mobility across the occupational network.
+
+This companion is designed to ensure transparency and reproducibility of all distance construction and calibration choices.
+
+
+
+
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(here)
+library(bcgovpond)
+library(janitor)
+library(plotly)
+library(gt)
+library(conflicted)
+conflicts_prefer(dplyr::filter)
+conflicts_prefer(dplyr::select)
+
+lambda <- 0.10 # λ is a dimensionless dispersion parameter governing sensitivity to transition costs. Increasing λ increases behavioral noise.
+
+cumvar_explained <- function(pca_obj, x) {
+  if (!inherits(pca_obj, "prcomp")) {
+    stop("pca_obj must be a prcomp object.")
+  }
+  sdev2 <- pca_obj$sdev^2
+  prop_var <- sdev2 / sum(sdev2)
+  if (x > length(prop_var)) {
+    stop("x exceeds number of principal components.")
+  }
+  sum(prop_var[seq_len(x)]) * 100
+}
+
+plot_pca_variance <- function(pca_obj, n_comp = 10, digits = 1) {
+  
+  if (!inherits(pca_obj, "prcomp")) {
+    stop("Input must be a prcomp object.")
+  }
+  
+  eigvals  <- pca_obj$sdev^2
+  prop_var <- eigvals / sum(eigvals)
+  cum_var  <- cumsum(prop_var)
+  
+  n <- min(n_comp, length(eigvals))
+  
+  percent_vals <- prop_var[seq_len(n)] * 100
+  cum_vals     <- cum_var[seq_len(n)] * 100
+  
+  df <- data.frame(
+    PC = factor(paste0("PC", seq_len(n)),
+                levels = paste0("PC", seq_len(n))),
+    Percent = percent_vals,
+    Cumulative = cum_vals,
+    Percent_lab = paste0(round(percent_vals, digits), "%"),
+    Cum_lab = paste0(round(cum_vals, digits), "%")
+  )
+  
+  library(ggplot2)
+  
+  ggplot(df, aes(x = PC)) +
+    geom_col(aes(y = Percent), width = 0.7) +
+    
+    # Bar labels
+    geom_text(
+      aes(y = Percent, label = Percent_lab),
+      vjust = -0.5,
+      size = 3.5
+    ) +
+    
+    # Cumulative line + points
+    geom_line(aes(y = Cumulative, group = 1), linewidth = 1) +
+    geom_point(aes(y = Cumulative), size = 2) +
+    
+    # Cumulative labels (skip PC1)
+    geom_text(
+      data = df[-1, ],
+      aes(y = Cumulative, label = Cum_lab),
+      vjust = -0.8,
+      size = 3.5
+    ) +
+    
+    scale_y_continuous(
+      name = "Percent Variance Explained",
+      limits = c(0, 100),
+      expand = expansion(mult = c(0, 0.05))
+    ) +
+    
+    labs(
+      title = "PCA Variance Explained",
+      x = "Principal Component"
+    ) +
+    
+    theme_minimal()
+}
+
+my_dt <- function(tbbl, round_digits = 3) {
+  num_cols <- names(tbbl)[vapply(tbbl, is.numeric, logical(1))]
+
+  DT::datatable(
+    tbbl,
+    filter = "top",
+    extensions = "Buttons",
+    rownames = FALSE,
+    options = list(
+      columnDefs = list(list(className = "dt-center", targets = "_all")),
+      paging = TRUE,
+      scrollX = TRUE,
+      scrollY = TRUE,
+      searching = TRUE,
+      ordering = TRUE,
+      dom = "Btip",
+      buttons = list(
+        list(extend = "csv", filename = "education_specificity"),
+        list(extend = "excel", filename = "education_specificity")
+      ),
+      pageLength = 25
+    )
+  ) |>
+    DT::formatRound(columns = num_cols, digits = round_digits)
+}
+
+
+h_dist <- function(tbbl){
+  tbbl |>
+    mutate(teer_o = as.integer(str_sub(origin, 2, 2)),
+           teer_d = as.integer(str_sub(destination, 2, 2)),
+           teer_gap = abs(teer_o - teer_d),
+           dist = case_when(origin == destination ~ 0,
+                            str_sub(origin,1,4) == str_sub(destination,1,4) ~ 1,
+                            str_sub(origin,1,3) == str_sub(destination,1,3) ~ 2,
+                            str_sub(origin,1,1) == str_sub(destination,1,1) ~ 3 + teer_gap,
+                            TRUE ~ 9))|>
+    select(origin, destination, distance=dist)
+}
+```
+
+
+```{r, cache=TRUE}
+skills <- read_rds(here("out","skills.rds"))
+skills_mat <- skills[["skills_noc_dist"]]
+skills_hc  <- hclust(as.dist(skills_mat), method = "average")
+skills_ord <- skills_hc$order
+skills_mat_ord <- skills_mat[skills_ord, skills_ord]
+skills_xlab <- as.character(colnames(skills_mat_ord))
+skills_ylab <- as.character(rownames(skills_mat_ord))
+
+hierarchy_distance <- crossing(origin=skills$nocs_we_want$noc_plus_title,
+                               destination=skills$nocs_we_want$noc_plus_title)|>
+  h_dist()|>
+  select(origin, destination, distance)
+
+hier_counts <- hierarchy_distance|>
+  group_by(distance)|>
+  count()|>
+  mutate(distance=factor(distance))
+
+hier_wide <- hierarchy_distance|>
+  pivot_wider(names_from = destination, values_from = distance)|>
+  column_to_rownames("origin")
+
+hier_mat <- hier_wide|>as.matrix()
+#sanity checks
+stopifnot(hier_mat==t(hier_mat))
+stopifnot(all(diag(hier_mat) == 0))
+stopifnot(min(hier_mat) == 0, max(hier_mat) == 9)
+hier_hc  <- hclust(as.dist(hier_mat), method = "average")
+hier_ord <- hier_hc$order
+
+#destination gating
+
+cip_noc <- bcgovpond::read_view("9810040401.csv") |>
+  select(highest = starts_with("Highest"),
+         cip     = starts_with("Major"),
+         noc     = starts_with("Occupation"),
+         value   = VALUE) |>
+  filter(highest != "Total - Highest certificate, diploma or degree")
+
+dest_p0 <- cip_noc |>
+  summarise(total = sum(value), .by = c(highest, cip)) |>
+  mutate(p0 = total / sum(total)) |>
+  select(cip, highest, p0) |>
+  unite(education, highest, cip, sep=": ")|>
+  tibble::deframe()
+
+noc_specificity <- cip_noc |>
+  filter(value > 0) |>
+  add_count(noc, wt = value, name = "T") |>
+  mutate(
+    p  = value / T,                      # p(e | n)
+    education = paste(highest, cip, sep = ": "),
+    dest_p0 = dest_p0[education],                  # baseline p(e)
+    kl_part = p * log(p / dest_p0)
+  ) |>
+  summarise(
+    KL = sum(kl_part),
+    T  = first(T),
+    .by = noc
+  )
+
+dest_fit_kl <- lm(log(KL) ~ log(T), data = noc_specificity)
+
+noc_specificity <- noc_specificity |>
+  mutate(
+    specificity = log(KL) - predict(dest_fit_kl),
+    TEER=str_sub(noc, 2,2))
+
+dest_plt <- noc_specificity|>
+  ggplot(aes(T, specificity, text=noc, colour=TEER)) +
+  scale_colour_viridis_d()+
+  geom_hline(yintercept = median(noc_specificity$specificity), colour="white", lwd=2)+
+  geom_point() +
+  scale_x_log10(labels=scales::comma)
+
+dest_spear <- round(cor(noc_specificity$T, noc_specificity$specificity, method = "spearman"),2)
+dest_pear <- round(cor(noc_specificity$T, noc_specificity$specificity),2)
+
+#education specificity 
+
+spec_p0 <- cip_noc |>
+  summarise(total = sum(value), .by = noc) |>
+  mutate(p0 = total / sum(total)) |>
+  select(noc, p0) |>
+  tibble::deframe()
+
+educ_specificity <- cip_noc |>
+  filter(value > 0) |>
+  add_count(highest, cip, wt = value, name = "T") |>
+  mutate(
+    p  = value / T,
+    spec_p0 = spec_p0[noc],
+    kl_part = p * log(p / spec_p0)
+  ) |>
+  summarise(
+    KL = sum(kl_part),
+    T  = first(T),
+    .by = c(highest, cip)
+  )
+
+spec_fit_kl <- lm(log(KL) ~ log(T), data = educ_specificity)
+
+educ_specificity <- educ_specificity |>
+  mutate(
+    specificity = log(KL) - predict(spec_fit_kl)
+  ) |>
+  mutate(attain_bin = case_when(
+    highest %in% c(
+      "Postsecondary certificate, diploma or degree",
+      "Postsecondary certificate or diploma below bachelor level",
+      "Apprenticeship or trades certificate or diploma",
+      "Non-apprenticeship trades certificate or diploma",
+      "Apprenticeship certificate",
+      "College, CEGEP or other non-university certificate or diploma",
+      "University certificate or diploma below bachelor level"
+    ) ~ "Non-university postsecondary",
+
+    highest %in% c(
+      "Bachelor's degree",
+      "Bachelor’s degree or higher"
+    ) ~ "Bachelor’s",
+
+    highest == "University certificate or diploma above bachelor level" ~
+      "Post-bachelor certificate",
+
+    highest == "Master's degree" ~ "Master’s",
+
+    highest %in% c(
+      "Degree in medicine, dentistry, veterinary medicine or optometry",
+      "Earned doctorate"
+    ) ~ "Professional / Doctorate"
+  ),
+  attain_bin = factor(
+    attain_bin,
+    levels = c(
+      "Non-university postsecondary",
+      "Bachelor’s",
+      "Post-bachelor certificate",
+      "Master’s",
+      "Professional / Doctorate"
+    ),
+    ordered = TRUE
+  ))
+
+
+spec_plt <- ggplot(educ_specificity, aes(T, 
+                                         specificity, 
+                                         fill=attain_bin, 
+                                         text=paste0("CIP:",
+                                                      cip,
+                                                      "\n Highest:",
+                                                      highest))) +
+  scale_fill_viridis_d()+
+  geom_jitter(shape=21, size=1.5, stroke=.1) +
+  scale_x_log10(labels=scales::comma)+
+  labs(title="Visibility of groups can be toggled by clicking legend below",
+       fill=NULL)
+
+spec_spear <- round(cor(educ_specificity$T, educ_specificity$specificity, method = "spearman"),2)
+spec_pear <- round(cor(educ_specificity$T, educ_specificity$specificity),2)
+
+
+
+```
+
+Skill Distance {orientation=columns}
+=====================================  
+    
+Inputs {.sidebar}
+-------------------------------------
+
+#### Skill distance matrix
+
+-   We use 161 occupational characteristics (Skills, Abilities, Knowledge, Work Activities) from ONET to measure the distance between occupations.
+-   Because occupational skill vectors are high-dimensional and highly correlated, Euclidean distances computed in the full feature space may suffer from distance concentration. 
+-   We therefore project the data onto the 10 leading principal components, which capture `r scales::percent(cumvar_explained(skills$onet_pca, 10)/100, accuracy=.1)` of total variance, before computing distances. 
+-   This reduces noise from low-variance directions while preserving the dominant geometry of the skill space.
+-   Seven NOCs lack a direct mapping to O*NET occupations. For these cases, we assign skill vectors equal to the mean skill profile of their corresponding 4-digit NOC group.
+-   This preserves the hierarchical structure of the classification while avoiding arbitrary imputation. 
+-   One occupation (44200: Primary combat members of the Canadian Armed Forces) has no 4-digit aggregate available and is therefore excluded from the analysis.
+-   Diagonal is self distance (0).
+-   Dark boxes along diagonal are clusters of occupations with similar skill profiles.
+-   Yellow lines near the edge are "Other Performers": they have the most distinct skill set.
+
+Column 
+-------------------------------------
+
+### Screeplot
+
+```{r}
+plot_pca_variance(skills$onet_pca)
+```
+
+Column 
+-------------------------------------
+
+### ONET Skill Distance
+
+```{r}
+skills_heat <- plotly::plot_ly(
+  x = skills_xlab,
+  y = skills_ylab,
+  z = skills_mat_ord,  
+  type = "heatmap", 
+  hovertemplate = paste(
+    "<b>Origin:</b> %{y}<br>",
+    "<b>Destination:</b> %{x}<br>",
+    "<b>Distance:</b> %{z:.3f}",
+    "<extra></extra>"
+  )
+)
+
+skills_heat |> plotly::layout(
+  xaxis = list(
+    type = "category",
+    showticklabels = FALSE,
+    ticks = ""
+  ),
+  yaxis = list(
+    type = "category",
+    showticklabels = FALSE,
+    ticks = ""
+  )
+)
+```
+
+Hierarchical distance
+===================================== 
+
+Column
+-------------------------------------
+
+### Description
+
+Hierarchical distances encode institutional and career-ladder barriers implied by occupational taxonomies:
+
+1. All five digits match: distance = 0  
+2. First four digits match: distance = 1  
+3. First three digits match: distance = 2  
+4. First digit matches: distance = 3 + |ΔTEER|  
+5. Otherwise: distance = 9  
+
+-  These distances are intentionally discrete and reflect steps in the NOC taxonomy. 
+-  In unregularized optimal transport, large blocks of ties can lead to many equally optimal flow allocations (mass splitting). 
+-  Entropic regularization (Sinkhorn) smooths the solution and makes the problem numerically stable.
+-  To the right we compare the internal structure of taxonomy with the same hierarchical distances reordered by skill similarity.
+-  The Spearman correlation is `r round(cor(as.vector(skills_mat[upper.tri(skills_mat)]),as.vector(hier_mat[upper.tri(hier_mat)]),method = "spearman"),3)`, indicating that institutional proximity and skill similarity are positively but only modestly related.
+-  The two metrics encode overlapping yet distinct occupational geometries.
+
+### Distance counts
+
+```{r}
+hier_count_plot <- hier_counts|>
+  ggplot(aes(distance, n, fill=distance))+
+  scale_fill_viridis_d()+
+  geom_col()+
+  scale_y_continuous(trans="log10", labels=scales::comma)+
+  theme_minimal()
+
+plotly::ggplotly(hier_count_plot)
+```
+
+
+Column
+-------------------------------------
+
+### Internal structure of taxonomy
+
+```{r}
+hier_mat_ord <- hier_mat[hier_ord, hier_ord]
+hier_xlab <- as.character(colnames(hier_mat_ord))
+hier_ylab <- as.character(rownames(hier_mat_ord))
+hier_dist_heat <- plotly::plot_ly(
+  x = hier_xlab,
+  y = hier_ylab,
+  z = hier_mat_ord, 
+  type = "heatmap",
+  hovertemplate = paste(
+    "<b>Origin:</b> %{y}<br>",
+    "<b>Destination:</b> %{x}<br>",
+    "<b>Distance:</b> %{z:.3f}",
+    "<extra></extra>"
+  )
+)
+hier_dist_heat |> 
+  plotly::layout(
+     xaxis = list(
+      type = "category",
+      showticklabels = FALSE,
+      ticks = ""
+    ),
+    yaxis = list(
+      type = "category",
+      showticklabels = FALSE,
+      ticks = ""
+  )
+)
+```
+
+
+### Hierarchical distance reordered by skill similarity
+```{r}
+hier_mat_ord <- hier_mat[skills_ord, skills_ord]
+hier_xlab <- as.character(colnames(hier_mat_ord))
+hier_ylab <- as.character(rownames(hier_mat_ord))
+hier_dist_heat <- plotly::plot_ly(
+  x = hier_xlab,
+  y = hier_ylab,
+  z = hier_mat_ord, 
+  type = "heatmap",
+  hovertemplate = paste(
+    "<b>Origin:</b> %{y}<br>",
+    "<b>Destination:</b> %{x}<br>",
+    "<b>Distance:</b> %{z:.3f}",
+    "<extra></extra>"
+  )
+)
+hier_dist_heat |> 
+  plotly::layout(
+     xaxis = list(
+      type = "category",
+      showticklabels = FALSE,
+      ticks = ""
+    ),
+    yaxis = list(
+      type = "category",
+      showticklabels = FALSE,
+      ticks = ""
+  )
+)
+```
+
+Destination gating
+===================================== 
+
+Inputs {.sidebar data-width=600}
+-------------------------------------
+
+### Destination Education Gating Intensity
+
+#### Step 1 — Overall Educational Distribution
+
+We compute the overall educational distribution across all NOCs. This represents the expected education mix for a worker drawn from the educated workforce without conditioning on occupation.
+
+#### Step 2 — Distribution Within Each NOC
+
+For each NOC:
+
+- Compute total workers $T$  
+- Compute occupation-specific education shares $p$  
+- Compare to the baseline distribution $p_0$
+
+#### Step 3 — Remove Size Effect
+
+Finite samples mechanically inflate divergence for small occupations.  We remove this statistical artifact by modeling expected divergence as a function of occupation size.
+
+```{r}
+#| echo: true
+#| eval: false
+
+fit_kl <- lm(log(KL) ~ log(T), data = noc_specificity)
+
+noc_specificity <- noc_specificity |>
+  mutate(
+    specificity = log(KL) - predict(fit_kl),
+    TEER = str_sub(noc, 2, 2)
+  )
+```
+
+The resulting specificity index measures how distinct an occupation’s education mix is relative to what is statistically expected given its size.  As expected, higher-credential occupations tend to exhibit greater educational gating, but the relationship is far from deterministic.
+
+#### Key Insight: Identification and Equilibrium Interpretation
+
+-  Occupational education distributions are estimated from finite counts, and small cells are imprecisely measured or suppressed.
+
+-  Traditional concentration measures (HHI, entropy, support size) therefore scale mechanically with occupation size and tail thickness.
+
+-  KL divergence captures where probability mass is concentrated relative to the aggregate baseline, rather than how much mass lies in very small cells.
+
+-  Residualizing KL with respect to $T$ removes predictable finite-sample divergence, isolating economically meaningful concentration.
+
+- Crucially, this construction yields a measure of destination gating intensity that is orthogonal to occupation size by construction. The index therefore captures how narrowly educational pipelines feed into an occupation, not how large the occupation happens to be.
+
+-  In the equilibrium transport framework, this matters because:
+
+    1) Size affects marginal constraints (the mass that must be absorbed).
+
+    2) Specificity affects the effective cost landscape faced by workers.
+
+- By separating these components, we ensure that destination “gating” reflects structural concentration in educational pathways rather than equilibrium scale effects. This allows education specificity to enter as heterogeneity in frictions within the same general equilibrium mobility model, rather than as a mechanical artifact of occupational size.
+
+
+
+Column {data-width=400}
+-------------------------------------
+
+### High specificity indicates few educational pathways into the occupation; residualized specificity is empirically orthogonal to log occupation size (Pearson=`r dest_pear`, Spearman=`r dest_spear`).
+
+```{r}
+plotly::ggplotly(dest_plt)
+```
+
+
+Column {data-width=300}
+-------------------------------------
+
+### 
+
+```{r}
+noc_specificity|>
+  select(noc, specificity)|>
+  arrange(desc(specificity))|>
+  my_dt()
+```
+
+
+
+Education specificity
+=====================================
+
+Inputs {.sidebar data-width=400}
+-------------------------------------
+
+### Education Specificity
+
+We construct education specificity symmetrically to destination gating, conditioning on field of study rather than occupation.
+
+#### Step 1 — Overall Occupational Distribution
+
+We compute the aggregate occupational distribution across all educated workers. This serves as the baseline allocation of workers across destinations absent conditioning on field of study.
+
+#### Step 2 — Distribution Within Each CIP
+
+For each CIP:
+
+- Compute total graduates $T$  
+- Compute occupation shares $p$  
+- Compare to the aggregate occupational distribution $p_0$  
+- Measure divergence using KL distance  
+
+#### Step 3 — Remove Size Effect
+
+As with occupations, small cohorts mechanically inflate divergence. We therefore residualize $\log KL$ with respect to $\log T$, isolating concentration beyond what is statistically expected given field size.
+
+```{r}
+#| echo: true
+#| eval: false
+
+fit_kl <- lm(log(KL) ~ log(T), data = educ_specificity)
+
+educ_specificity <- educ_specificity |>
+  mutate(
+    specificity = log(KL) - predict(fit_kl)
+  )
+```
+
+The resulting index measures how narrowly a field of study feeds into occupations, independent of cohort size.
+
+#### Interpretation
+
+Professional and doctoral fields exhibit consistently high occupational concentration. Below that threshold, specificity varies substantially within attainment levels. Educational level alone does not determine pipeline concentration.
+
+In the equilibrium transport framework, origin specificity captures heterogeneity in outbound pathways, complementing destination gating intensity on the occupational side.
+
+Column  {data-width=600}
+-------------------------------------
+
+### High specificity indicates few occupational pathways from the education; residualized specificity is empirically orthogonal to log occupation size (Pearson=`r spec_pear`, Spearman=`r spec_spear`).
+
+```{r}
+spec_plotly <- plotly::ggplotly(spec_plt)
+
+for(i in seq_along(spec_plotly$x$data)) {
+  # Remove parentheses and trailing ,1
+  spec_plotly$x$data[[i]]$name <- gsub(",1", "", spec_plotly$x$data[[i]]$name)
+  spec_plotly$x$data[[i]]$name <- gsub("^\\(|\\)$", "", spec_plotly$x$data[[i]]$name)
+}
+
+spec_plotly %>%
+  plotly::layout(
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.2
+    )
+  )
+```
+
+
+
+Column  {data-width=300}
+-------------------------------------
+
+###
+
+```{r}
+educ_specificity|>
+  select(highest, cip, specificity)|>
+  arrange(desc(specificity))|>
+  my_dt()
+```
+
+Transport Calibration
+============================================
+
+#### Scale and Identification
+
+In entropic optimal transport, predicted flows take the form
+
+$$
+P_{ij} \propto \exp\left(-\frac{C_{ij}}{\varepsilon}\right).
+$$
+
+Only the ratio $C/\varepsilon$ is identified: multiplying both the cost
+matrix and $\varepsilon$ by a common constant leaves the transport plan
+unchanged. Because the hierarchical and skill distance matrices are
+measured on different numerical scales, calibration must ensure that
+regularization reflects comparable substitution margins rather than
+arbitrary units.
+
+Accordingly, we anchor $\varepsilon$ to economically informative regions
+of each cost distribution.
+
+#### Anchoring to the Informative Cost Region
+
+The hierarchical distance contains a large mass of maximally distant
+pairs (distance = 9), which represent transitions the taxonomy treats as
+categorically distant. Because these pairs provide little information
+about substitution intensity among plausible transitions, we define the
+*informative region* as the set of non-maximal, non-zero hierarchical
+distances.
+
+Within this region, we compute the 25th, 50th, and 75th percentiles of
+hierarchical cost. These conditional quantiles represent increasingly
+broad but still economically meaningful transition margins.
+
+Each anchor value is then mapped to its unconditional percentile in the
+full hierarchical distribution. The skill distance matrix is calibrated
+by selecting cost values at these same unconditional percentiles. This
+procedure ensures that calibration aligns comparable substitution
+margins across metrics, rather than matching arbitrary numerical
+magnitudes.
+
+Percentile-based anchoring is invariant to monotonic transformations of
+the cost scale and therefore preserves the rank ordering of transition costs
+in each metric.
+
+```{r}
+# Inputs
+
+max_h <- max(hier_mat, na.rm = TRUE)
+
+# Helper: extract off-diagonal entries (optional; diagonal doesn't matter much if small)
+offdiag <- function(M) M[row(M) != col(M)]
+
+h_all <- offdiag(hier_mat)
+s_all <- offdiag(skills_mat)
+
+# Define the "non-maximal" hierarchical subset (exclude max distance and optionally zeros)
+h_nonmax <- h_all[h_all < max_h & h_all > 0]
+
+# Conditional quantile anchors within the informative (non-maximal) region
+q_cond <- c(0.25, 0.50, 0.75)
+h_anchor <- as.numeric(quantile(h_nonmax, probs = q_cond, na.rm = TRUE, type = 7))
+
+# Map each anchor value to its unconditional percentile in the FULL hierarchical distribution
+# (including max-distance pairs). This is the empirical CDF value F_H(h_anchor).
+p_uncond <- sapply(h_anchor, function(x) mean(h_all <= x, na.rm = TRUE))
+
+# Apply those percentiles to the skill distance distribution
+s_anchor <- as.numeric(quantile(s_all, probs = p_uncond, na.rm = TRUE, type = 7))
+
+# Summarize
+calibration <- tibble::tibble(
+  q_cond = q_cond,
+  h_anchor = h_anchor,
+  p_uncond = p_uncond,
+  s_anchor = s_anchor
+)
+
+calibration |>
+  gt() |>
+  fmt_number(
+    columns = c(h_anchor, p_uncond, s_anchor),
+    decimals = 3
+  ) |>
+  cols_label(
+    q_cond = "Conditional\nQuantile",
+    h_anchor = "Hierarchical\nAnchor",
+    p_uncond = "Unconditional\nPercentile",
+    s_anchor = "Skill\nAnchor"
+  ) |>
+  tab_options(
+    table.font.size = "90%",
+    data_row.padding = px(4)
+  ) |>
+  tab_header(
+  title = md("**Calibration Anchors Across Distance Metrics**")
+)
+
+
+```
+
+The median non-maximal hierarchical transition lies at approximately the 8th percentile of the full hierarchical distribution; the skill anchor is defined at this same percentile to ensure comparable substitution intensity.
+
+
+Model Evaluation
+===============================================================
+
+This section evaluates the empirical performance of the competing cost structures.
+
+We assess whether the relative fit of the hierarchical and skill distance matrices remains stable across a range of entropy regularization values ($\varepsilon$). Robustness to regularization ensures that conclusions reflect differences in underlying cost geometry rather than sensitivity to the scale of stochastic dispersion.
+
+Model performance is evaluated using cross-entropy (Kullback–Leibler divergence) between predicted and observed bilateral flow matrices. Because origin and destination totals are imposed by construction, fit is assessed exclusively on the composition of flows.
+
+A distance metric is considered empirically supported if it consistently yields lower cross-entropy across calibration anchors and regularization values. Instability across $\varepsilon$ would indicate that results depend on parameter tuning rather than structural differences in cost geometry.
+
+
+
+
+

@@ -1,0 +1,289 @@
+---
+title: "Occupational Mobility as Structured Reallocation"
+subtitle: "A Disciplined Empirical Framework"
+author: "Richard Martin"
+format:
+  revealjs:
+    slide-number: true
+    width: 1600
+    height: 900
+    transition: fade
+    theme: default
+    toc: false
+    self-contained: true
+execute:
+  echo: false
+---
+
+# Motivation
+
+## Occupational Mobility Is Structured
+
+- Workers do not move randomly across occupations.
+- Transition frequencies reflect:
+  - Human capital transferability
+  - Institutional segmentation
+  - Demand shifts across occupations
+
+But bilateral flows are hard to interpret.
+
+---
+
+## The Identification Problem
+
+Observed transition frequencies conflate:
+
+- Bilateral switching frictions  
+- Occupational expansion/contraction  
+- General equilibrium constraints  
+
+We need a framework that:
+
+1. Conditions on marginals  
+2. Forces distance to explain bilateral structure  
+3. Is falsifiable  
+
+---
+
+# Framework
+
+## Balanced Entropy-Regularized Transport
+
+We model flows $\pi_{ij}$ as:
+
+$$
+\pi_{ij} \propto \exp(-d_{ij}/\varepsilon)
+$$
+
+Subject to:
+
+- Observed origin totals  
+- Observed destination totals  
+
+Distance must rationalize the full transition matrix, conditional on marginals.
+
+---
+
+## Interpretation of $\varepsilon$
+
+- $d_{ij}$: measurable friction  
+- $\varepsilon$: dispersion parameter governing substitution  
+
+As $\varepsilon \to 0$, flows concentrate on minimum-cost cells.  
+As $\varepsilon \to \infty$, flows approach the maximum-entropy solution.
+
+---
+
+## Independence Limit
+
+As $\varepsilon \to \infty$:
+
+$$
+\exp(-d_{ij}/\varepsilon) \to 1
+$$
+
+So:
+
+$$
+\pi_{ij} = \frac{O_i D_j}{T}
+$$
+
+This is the structural null:  
+Bilateral flows reflect only marginals.
+
+---
+
+# Intuition: A 3×3 Toy Example
+
+Suppose:
+
+$$
+d = 
+\begin{pmatrix}
+0 & 1 & 3 \\
+1 & 0 & 2 \\
+3 & 2 & 0
+\end{pmatrix}
+$$
+
+As $\varepsilon$ changes:
+
+- Small $\varepsilon$ → mass concentrates near diagonal  
+- Large $\varepsilon$ → matrix approaches independence  
+
+(Insert small simulation visualization if desired)
+
+---
+
+# Distance Metrics
+
+## Skill Distance (Continuous)
+
+Constructed from:
+
+- O*NET skill descriptors  
+- PCA reduction  
+- Euclidean distance in reduced space  
+
+Captures human capital transferability.
+
+---
+
+## [Figure Placeholder]
+
+Skill Distance Heatmap  
+(Insert plotly heatmap object here)
+
+---
+
+## Hierarchical Distance (Discrete)
+
+Constructed from:
+
+- NOC taxonomy levels  
+- TEER-adjusted penalties  
+- Wage-based tie-breaking perturbation  
+
+Captures institutional segmentation.
+
+---
+
+## [Figure Placeholder]
+
+Hierarchical Distance Heatmap  
+(Insert plotly heatmap object here)
+
+---
+
+# Education Heterogeneity
+
+## Education Timing Regimes
+
+- Pre-2016 education  
+- Inter-census education (2016–2021)  
+
+Comparisons are descriptive, not causal.
+
+---
+
+## Educational Specificity (Origin)
+
+KL divergence of education field’s occupational distribution.
+
+High specificity → concentrated pathways  
+Low specificity → diffuse mapping  
+
+---
+
+## Education-Gating Intensity (Destination)
+
+KL divergence of occupation’s education mix relative to workforce.
+
+Captures concentration in pipelines and may reflect both credential requirements and historical sorting.
+
+---
+
+# Aggregate Evaluation Strategy
+
+## What Is Being Tested?
+
+Null: Conditional on marginals, bilateral flows are independent of measured distance.  
+
+Alternative: $\exp(-d_{ij}/\varepsilon)$ rationalizes observed flows.
+
+Evaluation dimensions:
+
+- Bilateral fit  
+- Rank preservation  
+- Sensitivity to $\varepsilon$  
+- Cross-metric comparison  
+
+---
+
+## Sensitivity to $\varepsilon$
+
+Calibration strategy:
+
+- Anchor percentile of hierarchical costs below maximal category distance.  
+- Apply same percentile to skill distance.
+
+Goal: Comparable substitution margins.
+
+---
+
+# Micro Evidence
+
+## Switching Probability
+
+$$
+Switch_i = f(Specificity, Inter\text{-}census, Interaction)
+$$
+
+Evidence consistent with framework:
+
+- Negative specificity gradient (pre-2016)  
+- Positive interaction with inter-census education  
+- Ordered switching probabilities  
+
+---
+
+## Cross-Level Coherence
+
+Coherence requires:
+
+- Aggregate flows favor low-distance pairs  
+- Micro gradients align with distance structure  
+
+Failure challenges structural interpretation.
+
+---
+
+# Appendix: Sinkhorn Scaling
+
+Balanced OT solution takes form:
+
+$$
+\pi_{ij} = u_i \exp(-d_{ij}/\varepsilon) v_j
+$$
+
+where $u_i$ and $v_j$ are scaling factors chosen to match marginals:
+
+$$
+\sum_j \pi_{ij} = O_i, \quad
+\sum_i \pi_{ij} = D_j
+$$
+
+Sinkhorn iteratively updates $u$ and $v$ until constraints hold.
+
+---
+
+# Falsifiability
+
+Framework fails if:
+
+- Exponential structure systematically mis-orders flows  
+- Specificity gradients disappear  
+- Distance metrics indistinguishable  
+- Micro and macro patterns diverge  
+
+---
+
+# Contributions
+
+## Empirical
+
+- Structured test of distance-based mobility  
+- Comparison of continuous vs institutional frictions  
+- Integration of education timing  
+
+## Conceptual
+
+- Mobility as constrained reallocation  
+- Clear separation of marginals and bilateral structure  
+- Explicit falsifiability  
+
+---
+
+# Thank You
+
+
