@@ -45,133 +45,22 @@ This companion is designed to ensure transparency and reproducibility of all dis
 library(flexdashboard)
 library(tidyverse)
 library(here)
-library(bcgovpond)
 library(janitor)
 library(plotly)
 library(gt)
 library(conflicted)
 conflicts_prefer(dplyr::filter)
 conflicts_prefer(dplyr::select)
-
-lambda <- 0.10 # λ is a dimensionless dispersion parameter governing sensitivity to transition costs. Increasing λ increases behavioral noise.
-
-cumvar_explained <- function(pca_obj, x) {
-  if (!inherits(pca_obj, "prcomp")) {
-    stop("pca_obj must be a prcomp object.")
-  }
-  sdev2 <- pca_obj$sdev^2
-  prop_var <- sdev2 / sum(sdev2)
-  if (x > length(prop_var)) {
-    stop("x exceeds number of principal components.")
-  }
-  sum(prop_var[seq_len(x)]) * 100
-}
-
-plot_pca_variance <- function(pca_obj, n_comp = 10, digits = 1) {
-  
-  if (!inherits(pca_obj, "prcomp")) {
-    stop("Input must be a prcomp object.")
-  }
-  
-  eigvals  <- pca_obj$sdev^2
-  prop_var <- eigvals / sum(eigvals)
-  cum_var  <- cumsum(prop_var)
-  
-  n <- min(n_comp, length(eigvals))
-  
-  percent_vals <- prop_var[seq_len(n)] * 100
-  cum_vals     <- cum_var[seq_len(n)] * 100
-  
-  df <- data.frame(
-    PC = factor(paste0("PC", seq_len(n)),
-                levels = paste0("PC", seq_len(n))),
-    Percent = percent_vals,
-    Cumulative = cum_vals,
-    Percent_lab = paste0(round(percent_vals, digits), "%"),
-    Cum_lab = paste0(round(cum_vals, digits), "%")
-  )
-  
-  library(ggplot2)
-  
-  ggplot(df, aes(x = PC)) +
-    geom_col(aes(y = Percent), width = 0.7) +
-    
-    # Bar labels
-    geom_text(
-      aes(y = Percent, label = Percent_lab),
-      vjust = -0.5,
-      size = 3.5
-    ) +
-    
-    # Cumulative line + points
-    geom_line(aes(y = Cumulative, group = 1), linewidth = 1) +
-    geom_point(aes(y = Cumulative), size = 2) +
-    
-    # Cumulative labels (skip PC1)
-    geom_text(
-      data = df[-1, ],
-      aes(y = Cumulative, label = Cum_lab),
-      vjust = -0.8,
-      size = 3.5
-    ) +
-    
-    scale_y_continuous(
-      name = "Percent Variance Explained",
-      limits = c(0, 100),
-      expand = expansion(mult = c(0, 0.05))
-    ) +
-    
-    labs(
-      title = "PCA Variance Explained",
-      x = "Principal Component"
-    ) +
-    
-    theme_minimal()
-}
-
-my_dt <- function(tbbl, round_digits = 3) {
-  num_cols <- names(tbbl)[vapply(tbbl, is.numeric, logical(1))]
-
-  DT::datatable(
-    tbbl,
-    filter = "top",
-    extensions = "Buttons",
-    rownames = FALSE,
-    options = list(
-      columnDefs = list(list(className = "dt-center", targets = "_all")),
-      paging = TRUE,
-      scrollX = TRUE,
-      scrollY = TRUE,
-      searching = TRUE,
-      ordering = TRUE,
-      dom = "Btip",
-      buttons = list(
-        list(extend = "csv", filename = "education_specificity"),
-        list(extend = "excel", filename = "education_specificity")
-      ),
-      pageLength = 25
-    )
-  ) |>
-    DT::formatRound(columns = num_cols, digits = round_digits)
-}
-
-
-h_dist <- function(tbbl){
-  tbbl |>
-    mutate(teer_o = as.integer(str_sub(origin, 2, 2)),
-           teer_d = as.integer(str_sub(destination, 2, 2)),
-           teer_gap = abs(teer_o - teer_d),
-           dist = case_when(origin == destination ~ 0,
-                            str_sub(origin,1,4) == str_sub(destination,1,4) ~ 1,
-                            str_sub(origin,1,3) == str_sub(destination,1,3) ~ 2,
-                            str_sub(origin,1,1) == str_sub(destination,1,1) ~ 3 + teer_gap,
-                            TRUE ~ 9))|>
-    select(origin, destination, distance=dist)
-}
+#functions--------------------------
+source(here("R", "functions.R"))
 ```
 
 
-```{r, cache=TRUE}
+```{r}
+hier <- read_rds(here("out", "hier.rds"))
+educ_specificity <- read_rds(here("out", "educ_specificity.rds"))
+noc_specificity <- read_rds(here("out", "noc_specificity.rds"))
+calibration <- read_rds(here("out", "calibration.rds"))
 skills <- read_rds(here("out","skills.rds"))
 skills_mat <- skills[["skills_noc_dist"]]
 skills_hc  <- hclust(as.dist(skills_mat), method = "average")
@@ -180,66 +69,6 @@ skills_mat_ord <- skills_mat[skills_ord, skills_ord]
 skills_xlab <- as.character(colnames(skills_mat_ord))
 skills_ylab <- as.character(rownames(skills_mat_ord))
 
-hierarchy_distance <- crossing(origin=skills$nocs_we_want$noc_plus_title,
-                               destination=skills$nocs_we_want$noc_plus_title)|>
-  h_dist()|>
-  select(origin, destination, distance)
-
-hier_counts <- hierarchy_distance|>
-  group_by(distance)|>
-  count()|>
-  mutate(distance=factor(distance))
-
-hier_wide <- hierarchy_distance|>
-  pivot_wider(names_from = destination, values_from = distance)|>
-  column_to_rownames("origin")
-
-hier_mat <- hier_wide|>as.matrix()
-#sanity checks
-stopifnot(hier_mat==t(hier_mat))
-stopifnot(all(diag(hier_mat) == 0))
-stopifnot(min(hier_mat) == 0, max(hier_mat) == 9)
-hier_hc  <- hclust(as.dist(hier_mat), method = "average")
-hier_ord <- hier_hc$order
-
-#destination gating
-
-cip_noc <- bcgovpond::read_view("9810040401.csv") |>
-  select(highest = starts_with("Highest"),
-         cip     = starts_with("Major"),
-         noc     = starts_with("Occupation"),
-         value   = VALUE) |>
-  filter(highest != "Total - Highest certificate, diploma or degree")
-
-#education proportions (aggregation across nocs)
-dest_p0 <- cip_noc |>
-  summarise(total = sum(value), .by = c(highest, cip)) |>
-  mutate(p0 = total / sum(total)) |>
-  select(cip, highest, p0) |>
-  unite(education, highest, cip, sep=": ")|>
-  tibble::deframe()
-
-noc_specificity <- cip_noc |>
-  filter(value > 0) |> #no zeros anyways, but just incase
-  add_count(noc, wt = value, name = "T")|> # noc total across educations
-  mutate(
-    p  = value / T, #probability of education conditional on noc
-    education = paste(highest, cip, sep = ": "), #create variable education out of level and cip
-    dest_p0 = dest_p0[education], # the unconditional probability of education
-    kl_contribution = p * log(p / dest_p0) #the education's contribution to the distinctness of this occupation's education mix.
-  )|>
-  summarise(
-    KL = sum(kl_contribution),
-    T  = first(T),
-    .by = noc
-  )
-
-dest_fit_kl <- lm(log(KL) ~ log(T), data = noc_specificity)
-
-noc_specificity <- noc_specificity |>
-  mutate(
-    specificity = log(KL) - predict(dest_fit_kl),
-    TEER=str_sub(noc, 2,2))
 
 dest_plt <- noc_specificity|>
   ggplot(aes(T, specificity, text=noc, colour=TEER)) +
@@ -250,73 +79,6 @@ dest_plt <- noc_specificity|>
 
 dest_spear <- round(cor(noc_specificity$T, noc_specificity$specificity, method = "spearman"),2)
 dest_pear <- round(cor(noc_specificity$T, noc_specificity$specificity),2)
-
-#education specificity 
-
-spec_p0 <- cip_noc |>
-  summarise(total = sum(value), .by = noc) |>
-  mutate(p0 = total / sum(total)) |>
-  select(noc, p0) |>
-  tibble::deframe()
-
-educ_specificity <- cip_noc |>
-  filter(value > 0) |>
-  add_count(highest, cip, wt = value, name = "T") |>
-  mutate(
-    p  = value / T,
-    spec_p0 = spec_p0[noc],
-    kl_part = p * log(p / spec_p0)
-  ) |>
-  summarise(
-    KL = sum(kl_part),
-    T  = first(T),
-    .by = c(highest, cip)
-  )
-
-spec_fit_kl <- lm(log(KL) ~ log(T), data = educ_specificity)
-
-educ_specificity <- educ_specificity |>
-  mutate(
-    specificity = log(KL) - predict(spec_fit_kl)
-  ) |>
-  mutate(attain_bin = case_when(
-    highest %in% c(
-      "Postsecondary certificate, diploma or degree",
-      "Postsecondary certificate or diploma below bachelor level",
-      "Apprenticeship or trades certificate or diploma",
-      "Non-apprenticeship trades certificate or diploma",
-      "Apprenticeship certificate",
-      "College, CEGEP or other non-university certificate or diploma",
-      "University certificate or diploma below bachelor level"
-    ) ~ "Non-university postsecondary",
-
-    highest %in% c(
-      "Bachelor's degree",
-      "Bachelor’s degree or higher"
-    ) ~ "Bachelor’s",
-
-    highest == "University certificate or diploma above bachelor level" ~
-      "Post-bachelor certificate",
-
-    highest == "Master's degree" ~ "Master’s",
-
-    highest %in% c(
-      "Degree in medicine, dentistry, veterinary medicine or optometry",
-      "Earned doctorate"
-    ) ~ "Professional / Doctorate"
-  ),
-  attain_bin = factor(
-    attain_bin,
-    levels = c(
-      "Non-university postsecondary",
-      "Bachelor’s",
-      "Post-bachelor certificate",
-      "Master’s",
-      "Professional / Doctorate"
-    ),
-    ordered = TRUE
-  ))
-
 
 spec_plt <- ggplot(educ_specificity, aes(T, 
                                          specificity, 
@@ -333,8 +95,6 @@ spec_plt <- ggplot(educ_specificity, aes(T,
 
 spec_spear <- round(cor(educ_specificity$T, educ_specificity$specificity, method = "spearman"),2)
 spec_pear <- round(cor(educ_specificity$T, educ_specificity$specificity),2)
-
-
 
 ```
 
@@ -419,13 +179,13 @@ Hierarchical distances encode institutional and career-ladder barriers implied b
 -  In unregularized optimal transport, large blocks of ties can lead to many equally optimal flow allocations (mass splitting). 
 -  Entropic regularization (Sinkhorn) smooths the solution and makes the problem numerically stable.
 -  To the right we compare the internal structure of taxonomy with the same hierarchical distances reordered by skill similarity.
--  The Spearman correlation is `r round(cor(as.vector(skills_mat[upper.tri(skills_mat)]),as.vector(hier_mat[upper.tri(hier_mat)]),method = "spearman"),3)`, indicating that institutional proximity and skill similarity are positively but only modestly related.
+-  The Spearman correlation is `r round(cor(as.vector(skills_mat[upper.tri(skills_mat)]),as.vector(hier$hier_mat[upper.tri(hier$hier_mat)]),method = "spearman"),3)`, indicating that institutional proximity and skill similarity are positively but only modestly related.
 -  The two metrics encode overlapping yet distinct occupational geometries.
 
 ### Distance counts
 
 ```{r}
-hier_count_plot <- hier_counts|>
+hier_count_plot <- hier$hier_counts|>
   ggplot(aes(distance, n, fill=distance))+
   scale_fill_viridis_d()+
   geom_col()+
@@ -442,7 +202,9 @@ Column
 ### Internal structure of taxonomy
 
 ```{r}
-hier_mat_ord <- hier_mat[hier_ord, hier_ord]
+hier_hc  <- hclust(as.dist(hier$hier_mat), method = "average")
+hier_ord <- hier_hc$order
+hier_mat_ord <- hier$hier_mat[hier_ord, hier_ord]
 hier_xlab <- as.character(colnames(hier_mat_ord))
 hier_ylab <- as.character(rownames(hier_mat_ord))
 hier_dist_heat <- plotly::plot_ly(
@@ -475,7 +237,7 @@ hier_dist_heat |>
 
 ### Hierarchical distance reordered by skill similarity
 ```{r}
-hier_mat_ord <- hier_mat[skills_ord, skills_ord]
+hier_mat_ord <- hier$hier_mat[skills_ord, skills_ord]
 hier_xlab <- as.character(colnames(hier_mat_ord))
 hier_ylab <- as.character(rownames(hier_mat_ord))
 hier_dist_heat <- plotly::plot_ly(
@@ -722,37 +484,6 @@ the cost scale and therefore preserves the rank ordering of transition costs
 in each metric.
 
 ```{r}
-# Inputs
-
-max_h <- max(hier_mat, na.rm = TRUE)
-
-# Helper: extract off-diagonal entries (optional; diagonal doesn't matter much if small)
-offdiag <- function(M) M[row(M) != col(M)]
-
-h_all <- offdiag(hier_mat)
-s_all <- offdiag(skills_mat)
-
-# Define the "non-maximal" hierarchical subset (exclude max distance and optionally zeros)
-h_nonmax <- h_all[h_all < max_h & h_all > 0]
-
-# Conditional quantile anchors within the informative (non-maximal) region
-q_cond <- c(0.25, 0.50, 0.75)
-h_anchor <- as.numeric(quantile(h_nonmax, probs = q_cond, na.rm = TRUE, type = 7))
-
-# Map each anchor value to its unconditional percentile in the FULL hierarchical distribution
-# (including max-distance pairs). This is the empirical CDF value F_H(h_anchor).
-p_uncond <- sapply(h_anchor, function(x) mean(h_all <= x, na.rm = TRUE))
-
-# Apply those percentiles to the skill distance distribution
-s_anchor <- as.numeric(quantile(s_all, probs = p_uncond, na.rm = TRUE, type = 7))
-
-# Summarize
-calibration <- tibble::tibble(
-  q_cond = q_cond,
-  h_anchor = h_anchor,
-  p_uncond = p_uncond,
-  s_anchor = s_anchor
-)
 
 calibration |>
   gt() |>

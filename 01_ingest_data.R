@@ -7,6 +7,14 @@
 #' noc == 5 digit
 #' gender==total
 #' download selected for database loading, move to add_to_pond
+#'
+#' ONET: go to https://www.onetcenter.org/dl_files/database/db_30_2_excel.zip
+#' unzip file, move skills, abilities, knowledge, work activities to add_to_pond
+#' prepend each file with date and "_" e.g. 2026-02-16_abilities.xlsx  it is crucial there is no "_" in the date, and
+#' the date and the meaning of the file are separated by "_"  (bcgovpond)
+#'
+#'also need onet to noc mapping file... trying to track down origin.
+#' then run following:
 
 library(bcgovpond)
 ingest_pond()
