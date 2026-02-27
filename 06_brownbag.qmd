@@ -1,5 +1,5 @@
 ---
-title: Occupational Mobility and Structured Reallocation
+title: "Occupational Mobility: Simulated data for now..."
 author: Richard Martin
 format:
   revealjs:
@@ -11,30 +11,46 @@ format:
     width: 1280
 ---
 
-# Motivation
+# The intent:
 
-## Core Question
+- Used linked Census data  (2016 & 2021) + education data to test whether occupational mobility is rationalized by distance
+- We compare two distance metrics, skill based (O*NET) and hierarchical (from the NOC tree).
+- The reality: I do not have the data yet, so I am going to simulate it.
+- And show you what I plan to do once I have the data.
 
-How do labour markets reallocate workers when occupational demand
-changes?
+# Core Question
+
+## What distance metric is better at rationalizing occupational mobility?
+
+- When workers change occupations, are frictions governed by:
+
+  - Smooth similarity in skills and abilities?
+  - Discrete institutional and credential boundaries?
+
+- Conditioning on observed marginals separates:
+
+  - Extensive margin of reallocation (how many move)
+  - Composition of reallocation (who moves to where)
+
+- Distance is the not the only determinant of mobility — but conditional on net reallocation volumes, distance should structure where flows come from if either distance metric represents an economically meaningful friction.
 
 ------------------------------------------------------------------------
 
-## The Identification Problem
+# Why This Is Hard
 
 Observed flows reflect:
 
 -   Demand shifts (origin contraction / destination expansion)
 -   Transition costs (distance in occupational space)
 
-**Challenge:** Raw flows confound both forces.
+Raw transitions confound both.
 
 ------------------------------------------------------------------------
 
-## Why Raw Transitions Are Not Enough
+## Identification Problem
 
 Because expanding occupations mechanically receive inflows, transition
-frequencies alone do not reveal mobility frictions.
+frequencies alone do not reveal the structure of frictions.
 
 (Insert observed transition heatmap here)
 
@@ -69,9 +85,9 @@ Flows decline smoothly with occupational distance.
 
 ## Isn't This Just Gravity?
 
-**Gravity:** - Estimates origin and destination fixed effects.
+**Gravity:** - *Estimates* origin and destination fixed effects.
 
-**Transport:** - Imposes observed marginals exactly. - Distance explains
+**Transport:** - *Imposes* observed marginals exactly. - Distance explains
 only bilateral substitution patterns.
 
 ------------------------------------------------------------------------
@@ -165,24 +181,4 @@ The framework would be challenged if:
 -   Timing regimes show no structural differences.
 -   Distance metrics perform indistinguishably poorly.
 
-------------------------------------------------------------------------
 
-# Open Design Questions
-
-Where should this break?
-
--   Is conditioning on marginals too restrictive?
--   Is percentile anchoring reasonable?
--   Is KL gating interpretable?
--   Is this substantively different from gravity?
-
-------------------------------------------------------------------------
-
-# Discussion
-
-I welcome feedback on:
-
--   Identification logic
--   Distance construction
--   Calibration strategy
--   Alternative interpretations

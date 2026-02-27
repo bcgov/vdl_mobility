@@ -41,9 +41,6 @@ Within the equilibrium transport framework, these indices capture heterogeneity 
 This companion is designed to ensure transparency and reproducibility of all distance construction and calibration choices.
 
 
-
-
-
 ```{r setup, include=FALSE}
 library(flexdashboard)
 library(tidyverse)
@@ -214,6 +211,7 @@ cip_noc <- bcgovpond::read_view("9810040401.csv") |>
          value   = VALUE) |>
   filter(highest != "Total - Highest certificate, diploma or degree")
 
+#education proportions (aggregation across nocs)
 dest_p0 <- cip_noc |>
   summarise(total = sum(value), .by = c(highest, cip)) |>
   mutate(p0 = total / sum(total)) |>
@@ -222,16 +220,16 @@ dest_p0 <- cip_noc |>
   tibble::deframe()
 
 noc_specificity <- cip_noc |>
-  filter(value > 0) |>
-  add_count(noc, wt = value, name = "T") |>
+  filter(value > 0) |> #no zeros anyways, but just incase
+  add_count(noc, wt = value, name = "T")|> # noc total across educations
   mutate(
-    p  = value / T,                      # p(e | n)
-    education = paste(highest, cip, sep = ": "),
-    dest_p0 = dest_p0[education],                  # baseline p(e)
-    kl_part = p * log(p / dest_p0)
-  ) |>
+    p  = value / T, #probability of education conditional on noc
+    education = paste(highest, cip, sep = ": "), #create variable education out of level and cip
+    dest_p0 = dest_p0[education], # the unconditional probability of education
+    kl_contribution = p * log(p / dest_p0) #the education's contribution to the distinctness of this occupation's education mix.
+  )|>
   summarise(
-    KL = sum(kl_part),
+    KL = sum(kl_contribution),
     T  = first(T),
     .by = noc
   )
@@ -571,7 +569,7 @@ The resulting specificity index measures how distinct an occupation’s educatio
 Column {data-width=400}
 -------------------------------------
 
-### High specificity indicates few educational pathways into the occupation; residualized specificity is empirically orthogonal to log occupation size (Pearson=`r dest_pear`, Spearman=`r dest_spear`).
+### High specificity indicates few educational pathways into the occupation; residualized specificity is not correlated with log occupation size (Pearson=`r dest_pear`, Spearman=`r dest_spear`).
 
 ```{r}
 plotly::ggplotly(dest_plt)
@@ -642,7 +640,7 @@ In the equilibrium transport framework, origin specificity captures heterogeneit
 Column  {data-width=600}
 -------------------------------------
 
-### High specificity indicates few occupational pathways from the education; residualized specificity is empirically orthogonal to log occupation size (Pearson=`r spec_pear`, Spearman=`r spec_spear`).
+### High specificity indicates few occupational pathways from the education; residualized specificity is not correlated with log occupation size (Pearson=`r spec_pear`, Spearman=`r spec_spear`).
 
 ```{r}
 spec_plotly <- plotly::ggplotly(spec_plt)
