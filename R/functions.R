@@ -57,59 +57,84 @@ log_sum_exp <- function(x) {
   mx + log(sum(exp(x - mx)))
 }
 
-sinkhorn_aligned <- function(a, b, C, epsilon, ...) {
+sinkhorn_aligned <- function(a, b, C, epsilon, solver, ...) {
   stopifnot(!is.null(names(a)))
   stopifnot(!is.null(names(b)))
   stopifnot(!is.null(rownames(C)))
   stopifnot(!is.null(colnames(C)))
-  # Ensure same occupation universe
   stopifnot(setequal(names(a), rownames(C)))
   stopifnot(setequal(names(b), colnames(C)))
-  # Reorder C to match marginals
   C <- C[names(a), names(b), drop = FALSE]
-  sinkhorn_log(a, b, C, epsilon, ...)
+  stopifnot(identical(names(a), rownames(C))) #this really shouldn't happen now, but just in case.
+  stopifnot(identical(names(b), colnames(C))) #this really shouldn't happen now, but just in case.
+  solver(a, b, C, epsilon, ...)
 }
 
-sinkhorn_log <- function(a, b, C, epsilon, max_iter = 5000, tol = 1e-9, verbose = FALSE) {
-  # validate
+sinkhorn_log <- function(a, b, C, epsilon,
+                         max_iter = 5000,
+                         tol = 1e-9,
+                         verbose = FALSE) {
+
   stopifnot(is.matrix(C))
   stopifnot(length(a) == nrow(C))
   stopifnot(length(b) == ncol(C))
-  # Normalize
+  stopifnot(sum(a) > 0, sum(b) > 0)
+
+  # normalize
   a <- a / sum(a)
   b <- b / sum(b)
-  #dimensions
+
   n <- length(a)
   m <- length(b)
-  # K = exp(-C / epsilon) can underflow when C large or epsilon small: use log scale and exponentiate at the very end.
+
+  # log marginals (handle zeros correctly)
+  log_a <- ifelse(a > 0, log(a), -Inf)
+  log_b <- ifelse(b > 0, log(b), -Inf)
+
+  # log kernel
   logK <- -C / epsilon
-  # In standard Sinkhorn: P = diag(u) * K * diag(v)
-  # In log space: logP = log_u + logK + log_v
-  # We initialize log_u and log_v at zero, corresponding to u = v = 1.
+
   log_u <- rep(0, n)
   log_v <- rep(0, m)
-  # Sinkhorn iterations: In log-domain, these become additive updates.
+
+  logsumexp <- function(x) {
+    xmax <- max(x)
+    xmax + log(sum(exp(x - xmax)))
+  }
+
   for (iter in seq_len(max_iter)) {
-    log_u_prev <- log_u
-    for (i in seq_len(n)) {# Update log_u (row normalization)
-      log_u[i] <- log(a[i]) - log_sum_exp(logK[i, ] + log_v)
+
+    # update log_u
+    for (i in seq_len(n)) {
+      log_u[i] <- log_a[i] -
+        logsumexp(logK[i, ] + log_v)
     }
-    for (j in seq_len(m)) { #Update log_v (column normalization)
-      log_v[j] <- log(b[j]) - log_sum_exp(logK[, j] + log_u)
+
+    # update log_v
+    for (j in seq_len(m)) {
+      log_v[j] <- log_b[j] -
+        logsumexp(logK[, j] + log_u)
     }
-    if (max(abs(log_u - log_u_prev)) < tol) {#Convergence in scaling factors implies convergence in P.
-      if (verbose) cat("Converged in", iter, "iterations\n")
-      break
+
+    # optional convergence check
+    if (iter %% 50 == 0) {
+      logP <- outer(log_u, log_v, "+") + logK
+      P <- exp(logP)
+
+      err <- max(
+        max(abs(rowSums(P) - a)),
+        max(abs(colSums(P) - b))
+      )
+
+      if (verbose) cat("Iter", iter, "err:", err, "\n")
+      if (err < tol) break
     }
   }
-  # Recover the transport plan: logP = log_u + logK + log_v
+
   logP <- outer(log_u, log_v, "+") + logK
   P <- exp(logP)
-  P <- P / sum(P) # Minor rounding error can accumulate in iterations.
-  list(
-    plan = P,
-    iterations = iter
-  )
+
+  list(plan = P, log_u = log_u, log_v = log_v)
 }
 
 
@@ -213,6 +238,13 @@ my_dt <- function(tbbl, round_digits = 3) {
     DT::formatRound(columns = num_cols, digits = round_digits)
 }
 
+extract_margin <- function(tbbl, quoted_age, unquoted_column){
+  tbbl|>
+    filter(age_broad==quoted_age)|>
+    ungroup()|>
+    select(noc_plus_title, {{ unquoted_column }})|>
+    deframe()
+}
 
 
 
