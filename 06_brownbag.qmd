@@ -11,6 +11,11 @@ format:
     width: 1280
 ---
 
+We verified the R log-domain Sinkhorn implementation against the Python POT library on the full skill-cost matrix. Both solutions satisfied marginal constraints to <1e−11 and agreed to numerical precision (max absolute difference 2.8e−12; relative Frobenius difference 3.5e−10).
+
+
+
+
 # The intent:
 
 - Used linked Census data  (2016 & 2021) + education data to test whether occupational mobility is rationalized by distance
