@@ -1,19 +1,21 @@
-# library(reticulate)
-# reticulate::py_require("POT")
-# ot <- import("ot")
+ # library(reticulate)
+ # reticulate::py_require("POT")
+ # ot <- import("ot")
 library(tidyverse)
 library(here)
 library(janitor)
 library(vroom)
 library(bcgovpond)
 library(patchwork)
+library(matrixStats)
 library(conflicted)
 conflicts_prefer(vroom::cols)
 conflicts_prefer(vroom::col_double)
 conflicts_prefer(vroom::col_character)
 conflicts_prefer(dplyr::filter)
 
-source(here("R","functions.R"))
+source(here("R","sinkhorn_utils.R"))
+source(here("R", "other.R"))
 lfs <- list()
 #read data-------------------
 calibration <- read_rds(here("out","calibration.rds"))
@@ -108,4 +110,19 @@ b_young <- extract_margin(margins, "young", to_prop)
 a_old <- extract_margin(margins, "old", from_prop)
 b_old <- extract_margin(margins, "old", to_prop)
 
+ # a_safe <- make_safe(a_young)
+ # b_safe <- make_safe(b_young)
+
 P <- sinkhorn_aligned(a_young, b_young, C_skill, epsilon=epsilon_skill, solver=sinkhorn_log)
+#P_p <- sinkhorn_aligned(a_safe, b_safe, C_skill, epsilon=epsilon_skill, solver=ot$sinkhorn)
+
+check_transport(P$plan, a_safe, b_safe)
+ # check_transport(P_p, a_safe, b_safe)
+ # compare_transport(P$plan, P_p)
+
+
+
+
+
+
+

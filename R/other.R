@@ -22,120 +22,6 @@ h_dist <- function(tbbl){
                             TRUE ~ 9))|>
     select(origin, destination, distance=dist)
 }
-offdiag <- function(M) M[row(M) != col(M)]
-
-kl_score <- function(P_obs, P_hat, tiny = 1e-15) {
-
-  # Normalize both matrices to ensure they are valid probability distributions.
-  # This guards against small numerical drift from earlier computations.
-  P_obs <- P_obs / sum(P_obs)
-  P_hat <- P_hat / sum(P_hat)
-
-  # Entropic OT should produce strictly positive P_hat,
-  # but numerical underflow can produce exact zeros.
-  # If P_hat == 0 where P_obs > 0, KL becomes infinite.
-  # We therefore bound P_hat away from zero by a tiny constant.
-  P_hat <- pmax(P_hat, tiny)
-
-  # Terms where P_obs == 0 contribute 0 to KL by definition:
-  #   lim_{x→0} x log(x / y) = 0
-  # However, computing 0 * log(0 / y) directly gives NaN.
-  # So we only sum over entries where P_obs > 0.
-  idx <- P_obs > 0
-
-  # Compute KL divergence:
-  #   KL(P_obs || P_hat) == Σ P_obs * log(P_obs / P_hat)
-  # This evaluates cross-entropy difference while focusing
-  # exclusively on bilateral substitution patterns.
-  sum(P_obs[idx] * log(P_obs[idx] / P_hat[idx]))
-}
-
-#helper function avoid overflow
-log_sum_exp <- function(x) {
-  mx <- max(x)
-  if (!is.finite(mx)) return(mx)
-  mx + log(sum(exp(x - mx)))
-}
-
-sinkhorn_aligned <- function(a, b, C, epsilon, solver, ...) {
-  stopifnot(!is.null(names(a)))
-  stopifnot(!is.null(names(b)))
-  stopifnot(!is.null(rownames(C)))
-  stopifnot(!is.null(colnames(C)))
-  stopifnot(setequal(names(a), rownames(C)))
-  stopifnot(setequal(names(b), colnames(C)))
-  C <- C[names(a), names(b), drop = FALSE]
-  stopifnot(identical(names(a), rownames(C))) #this really shouldn't happen now, but just in case.
-  stopifnot(identical(names(b), colnames(C))) #this really shouldn't happen now, but just in case.
-  solver(a, b, C, epsilon, ...)
-}
-
-sinkhorn_log <- function(a, b, C, epsilon,
-                         max_iter = 5000,
-                         tol = 1e-9,
-                         verbose = FALSE) {
-
-  stopifnot(is.matrix(C))
-  stopifnot(length(a) == nrow(C))
-  stopifnot(length(b) == ncol(C))
-  stopifnot(sum(a) > 0, sum(b) > 0)
-
-  # normalize
-  a <- a / sum(a)
-  b <- b / sum(b)
-
-  n <- length(a)
-  m <- length(b)
-
-  # log marginals (handle zeros correctly)
-  log_a <- ifelse(a > 0, log(a), -Inf)
-  log_b <- ifelse(b > 0, log(b), -Inf)
-
-  # log kernel
-  logK <- -C / epsilon
-
-  log_u <- rep(0, n)
-  log_v <- rep(0, m)
-
-  logsumexp <- function(x) {
-    xmax <- max(x)
-    xmax + log(sum(exp(x - xmax)))
-  }
-
-  for (iter in seq_len(max_iter)) {
-
-    # update log_u
-    for (i in seq_len(n)) {
-      log_u[i] <- log_a[i] -
-        logsumexp(logK[i, ] + log_v)
-    }
-
-    # update log_v
-    for (j in seq_len(m)) {
-      log_v[j] <- log_b[j] -
-        logsumexp(logK[, j] + log_u)
-    }
-
-    # optional convergence check
-    if (iter %% 50 == 0) {
-      logP <- outer(log_u, log_v, "+") + logK
-      P <- exp(logP)
-
-      err <- max(
-        max(abs(rowSums(P) - a)),
-        max(abs(colSums(P) - b))
-      )
-
-      if (verbose) cat("Iter", iter, "err:", err, "\n")
-      if (err < tol) break
-    }
-  }
-
-  logP <- outer(log_u, log_v, "+") + logK
-  P <- exp(logP)
-
-  list(plan = P, log_u = log_u, log_v = log_v)
-}
 
 
 cumvar_explained <- function(pca_obj, x) {
@@ -246,5 +132,8 @@ extract_margin <- function(tbbl, quoted_age, unquoted_column){
     deframe()
 }
 
+offdiag <- function(M) {
+  M[row(M) != col(M)]
+}
 
 

@@ -13,15 +13,36 @@ format:
 
 We verified the R log-domain Sinkhorn implementation against the Python POT library on the full skill-cost matrix. Both solutions satisfied marginal constraints to <1e−11 and agreed to numerical precision (max absolute difference 2.8e−12; relative Frobenius difference 3.5e−10).
 
+The entropy-regularized transport model is equivalent to a doubly-constrained gravity model of occupational mobility, where distance is defined either by skill similarity or by institutional hierarchy.
+
+By conditioning on the observed marginals, the transport model eliminates the main identification problem in gravity models: separating distance effects from origin/destination size effects.
+
+Modern gravity estimation includes origin and destination fixed effects:
+
+These absorb size differences.
+
+But two issues remain:
+
+1️⃣ Marginals are only matched in expectation
+
+The estimated flows generally do not exactly match observed totals.
+
+2️⃣ Identification can still be weak
+
+Because:
+
+fixed effects soak up huge variation
+
+distance effects can become sensitive to specification.
+
+Because the transport model conditions on observed origin and destination totals, occupational growth and decline are imposed by the data. The model is therefore evaluated solely on its ability to rationalize bilateral substitution patterns across occupations.
 
 
+SafeSink prioritizes correctness over raw speed by enforcing name-based alignment and numerical stability.
+Log-domain Sinkhorn (numerically stable)
+Dimension-safe inputs (no silent alignment bugs)
+Built-in validation tools
 
-# The intent:
-
-- Used linked Census data  (2016 & 2021) + education data to test whether occupational mobility is rationalized by distance
-- We compare two distance metrics, skill based (O*NET) and hierarchical (from the NOC tree).
-- The reality: I do not have the data yet, so I am going to simulate it.
-- And show you what I plan to do once I have the data.
 
 # Core Question
 
@@ -40,150 +61,3 @@ We verified the R log-domain Sinkhorn implementation against the Python POT libr
 - Distance is the not the only determinant of mobility — but conditional on net reallocation volumes, distance should structure where flows come from if either distance metric represents an economically meaningful friction.
 
 ------------------------------------------------------------------------
-
-# Why This Is Hard
-
-Observed flows reflect:
-
--   Demand shifts (origin contraction / destination expansion)
--   Transition costs (distance in occupational space)
-
-Raw transitions confound both.
-
-------------------------------------------------------------------------
-
-## Identification Problem
-
-Because expanding occupations mechanically receive inflows, transition
-frequencies alone do not reveal the structure of frictions.
-
-(Insert observed transition heatmap here)
-
-------------------------------------------------------------------------
-
-# Framework Intuition
-
-## Conditioning on Marginals
-
-We impose:
-
--   Origin employment totals (2016)
--   Destination employment totals (2021)
-
-Distance can explain only **who moves where**, not occupational growth.
-
-(Diagram: two employment vectors with arrows between them)
-
-------------------------------------------------------------------------
-
-## Transport Structure
-
-Under entropic optimal transport:
-
-$$
-P_{ij} \propto \exp(-C_{ij}/\varepsilon)
-$$
-
-Flows decline smoothly with occupational distance.
-
-------------------------------------------------------------------------
-
-## Isn't This Just Gravity?
-
-**Gravity:** - *Estimates* origin and destination fixed effects.
-
-**Transport:** - *Imposes* observed marginals exactly. - Distance explains
-only bilateral substitution patterns.
-
-------------------------------------------------------------------------
-
-# Competing Distance Metrics
-
-## Two Hypotheses About Frictions
-
-1.  Continuous similarity in skills and abilities.
-2.  Institutional and hierarchical segmentation.
-
-------------------------------------------------------------------------
-
-## Skill Distance
-
--   Constructed from O\*NET descriptors.
--   PCA-reduced skill space.
--   Continuous cost geometry.
-
-(Insert skill heatmap here)
-
-------------------------------------------------------------------------
-
-## Hierarchical Distance
-
--   Derived from NOC taxonomy.
--   Discrete plateaus.
--   Encodes institutional and credential boundaries.
-
-(Insert hierarchical heatmap here)
-
-------------------------------------------------------------------------
-
-## What They Imply
-
--   Skill distance → smooth substitution patterns.
--   Hierarchical distance → sharp boundaries and clustering.
-
-------------------------------------------------------------------------
-
-# Education Timing
-
-## Why Timing Matters
-
-Two regimes:
-
--   **Pre-2016 education** → human capital fixed.
--   **Inter-census education (2016--2021)** → human capital shifts.
-
-(Diagram: fixed position vs shifted position in cost space)
-
-------------------------------------------------------------------------
-
-## Structural Expectation
-
-Transport should align with mobility primarily in the pre-2016 education
-group.
-
-For inter-census education, transitions reflect entry into newly
-feasible occupations.
-
-------------------------------------------------------------------------
-
-# Calibration
-
-## Scale and Identification
-
-Only the ratio $C / \varepsilon$ is identified.
-
-Distance matrices operate on different numerical scales.
-
-------------------------------------------------------------------------
-
-## Percentile Anchoring
-
--   Select percentiles of non-maximal hierarchical distances (25, 50,
-    75).
--   Map to unconditional percentiles.
--   Apply same percentiles to skill distance.
-
-(Diagram of cost distributions with anchors highlighted)
-
-------------------------------------------------------------------------
-
-# What Would Falsify This?
-
-The framework would be challenged if:
-
--   Flows do not decline with distance.
--   Fit is unstable across $\varepsilon$.
--   Timing regimes show no structural differences.
--   Distance metrics perform indistinguishably poorly.
-
-

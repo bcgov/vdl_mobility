@@ -5,15 +5,30 @@ library(janitor)
 library(conflicted)
 conflicts_prefer(dplyr::filter)
 #functions------------------------------------
-source(here("R", "functions.R"))
+source(here("R", "other.R"))
 #constants----------------------------------------------
 skills <- list()
 hier <- list()
 
 #skill distance stuff------------------------------------------
-skills$mapping <- read_view("onet2019_soc2018_noc2016_noc2021_crosswalk_consolodated.xlsx")%>%
-  mutate(noc_2021=str_pad(noc2021, "left", pad="0", width=5))%>%
-  select(noc_2021, noc2021_title, o_net_soc_code = onetsoc2019)%>%
+skills$onet_2019_to_soc_2018 <- read_view("2019_to_SOC_Crosswalk.xlsx", skip=3)|>
+  select(o_net_soc_code=`O*NET-SOC 2019 Code`, soc_2018=`2018 SOC Code`)
+
+skills$soc_2018_to_noc_2016 <- read_view("noc2016v1_3-soc2018us-eng.csv")|>
+  select(soc_2018=`SOC 2018 (US) Code`, noc_2016=`NOC 2016  Version 1.3 Code`)
+
+skills$noc_2016_to_noc_2021 <- read_view("noc2016v1_3-noc2021v1_0-eng.csv")|>
+  select(noc_2016=`NOC 2016 V1.3 Code`, noc_2021=`NOC 2021 V1.0 Code`, noc2021_title=`NOC 2021 V1.0 Title`)|>
+  mutate(noc_2016=str_pad(noc_2016, width=4, pad="0"),
+         noc_2021=str_pad(noc_2021, width=5, pad="0"),
+         noc2021_title=if_else(noc_2021 %in% c("00011", "00012", "00013", "00014", "00015"), "Senior managers - public and private sector", noc2021_title),
+         noc_2021=if_else(noc_2021 %in% c("00011", "00012", "00013", "00014", "00015"), "00018", noc_2021)
+        )
+
+skills$mapping <- left_join(skills$onet_2019_to_soc_2018, skills$soc_2018_to_noc_2016)|>
+  left_join(skills$noc_2016_to_noc_2021)%>%
+  select(noc_2021, noc2021_title, o_net_soc_code)|>
+  arrange(o_net_soc_code, noc_2021)|>
   distinct()
 
 skills$nocs_we_want <- skills$mapping |>
@@ -197,9 +212,6 @@ educ_specificity <- educ_specificity |>
 #anchoring epsilon-------------------------
 
 max_h <- max(hier$hier_mat, na.rm = TRUE)
-
-# Helper: extract off-diagonal entries (optional; diagonal doesn't matter much if small)
-
 
 h_all <- offdiag(hier$hier_mat)
 s_all <- offdiag(skills$skills_noc_dist)
