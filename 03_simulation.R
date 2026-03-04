@@ -8,6 +8,7 @@ library(vroom)
 library(bcgovpond)
 library(patchwork)
 library(matrixStats)
+library(plotly)
 library(conflicted)
 conflicts_prefer(vroom::cols)
 conflicts_prefer(vroom::col_double)
@@ -28,7 +29,6 @@ lfs_files <- c(resolve_current("age1115p1.csv"),
                resolve_current("age2125p2.csv")
 )
 
-
 lfs_data <- vroom(lfs_files,
                       col_types = cols(
                         SYEAR = col_double(),
@@ -43,82 +43,227 @@ lfs_data <- vroom(lfs_files,
          syear<max(syear))|>
   mutate(noc_5=if_else(noc_5 %in% paste0("000",11:15), "00018", noc_5))|>
   summarize(count=sum(count)/12, .by=c(syear, age10, noc_5))|>
-  semi_join(skills$nocs_we_want, by=c("noc_5"="noc_2021")) #military with no skill data filtered out.
+  inner_join(skills$nocs_we_want, by=c("noc_5"="noc_2021"))|> #military with no skill data filtered out.
+  select(-noc_5)
 
-
-from <- lfs_data|>
+a <- lfs_data|>
   filter(syear<2015,
          age10!="55-64")|> #retired in end year
   mutate(age_broad=if_else(age10=="15-24", "young", "old"))|>
-  summarize(count=sum(count), .by = c(age_broad, noc_5))|>
+  summarize(count=sum(count), .by = c(age_broad, noc_plus_title))|>
   group_by(age_broad)|>
   mutate(prop=count/sum(count))|>
   select(age_broad,
-         noc_5,
-         from_prop=prop)
+         noc_plus_title,
+         a=prop)|>
+  nest()|>
+  mutate(a=map(data, deframe))|>
+  select(-data)
 
-to <- lfs_data|>
+b <- lfs_data|>
   filter(syear>2020,
          age10!="15-24")|> #babies in start year
   mutate(age_broad=if_else(age10=="25-34", "young", "old"))|>
-  summarize(count=sum(count), .by = c(age_broad, noc_5))|>
+  summarize(count=sum(count), .by = c(age_broad, noc_plus_title))|>
   group_by(age_broad)|>
   mutate(prop=count/sum(count))|>
   select(age_broad,
-         noc_5,
-         to_prop=prop)
+         noc_plus_title,
+         b=prop)|>
+  nest()|>
+  mutate(b=map(data, deframe))|>
+  select(-data)
 
-margins <- full_join(from, to, by = join_by(age_broad, noc_5))|>
-  full_join(skills$nocs_we_want, by=c("noc_5"="noc_2021"))|>
-  mutate(diff=to_prop-from_prop,
-         abs_diff=abs(diff))
+a_old <- a$a[a$age_broad=="old"][[1]]
+b_old <- b$b[b$age_broad=="old"][[1]]
+a_young <- a$a[a$age_broad == "young"][[1]]
+b_young <- b$b[b$age_broad == "young"][[1]]
 
-#visualizations
+C_skill <- skills$skills_noc_dist/calibration$s_anchor[calibration$q_cond==.5]
+C_hier <- hier$hier_mat/calibration$h_anchor[calibration$q_cond==.5]
 
-# young_change <- margins|>
-#   filter(age_broad=="young")|>
-#   slice_max(abs_diff, n=20)|>
-#   ggplot(aes(diff, fct_reorder(noc_plus_title, diff)))+
-#   geom_col()+
-#   coord_cartesian(xlim = c(-.075, .025))+
-#   labs(title="Occupational changes for young",
-#        x="Change in Occupational proportion",
-#        y=NULL
-#        )
-#
-# old_change <- margins|>
-#   filter(age_broad=="old")|>
-#   slice_max(abs_diff, n=20)|>
-#   ggplot(aes(diff, fct_reorder(noc_plus_title, diff)))+
-#   geom_col()+
-#   coord_cartesian(xlim = c(-.075, .025))+
-#   labs(title="Occupational changes for old",
-#        x="Change in Occupational proportion",
-#        y=NULL
-#   )
-#
-# young_change+old_change
 
-C_skill <- skills$skills_noc_dist
-C_hier <- hier[["hier_mat"]]
+simulations <- list(
+    `DGP: 100% Skill` = list(
+    a = a_old,
+    b = b_old,
+    C = C_skill
+  ),
+  `DGP: 75% Skill / 25% Hierarchy` = list(
+    a = a_old,
+    b = b_old,
+    C = .75*C_skill+.25*C_hier
+  ),
+  `DGP: 50% Skill / 50% Hierarchy` = list(
+    a = a_old,
+    b = b_old,
+    C = .5*C_skill+.5*C_hier
+  ),
+  `DGP: 25% Skill / 75% Hierarchy` = list(
+    a = a_old,
+    b = b_old,
+    C = .25*C_skill+.75*C_hier
+  ),
+  `DGP: 100% Hierarchy` = list(
+    a = a_old,
+    b = b_old,
+    C = C_hier
+    )
+  )
 
-epsilon_skill <- calibration$s_anchor[calibration$q_cond==.5]
-epsilon_hier <- calibration$h_anchor[calibration$q_cond==.5]
+P_fake <- map(simulations, \(sim)
+              sinkhorn_aligned(sim$a, sim$b, sim$C, 1, sinkhorn_log)$plan
+)
+P_fake$`DGP: Independence` <- outer_named(a_old, b_old)
+P_fake$`DGP: Independence` <- P_fake$`DGP: Independence` / sum(P_fake$`DGP: Independence`)
 
-a_young <- extract_margin(margins, "young", from_prop)
-b_young <- extract_margin(margins, "young", to_prop)
-a_old <- extract_margin(margins, "old", from_prop)
-b_old <- extract_margin(margins, "old", to_prop)
+#have the fake data, ready to simulate!
 
- # a_safe <- make_safe(a_young)
- # b_safe <- make_safe(b_young)
+fit_grid <- crossing(
+  dgp = names(P_fake),
+  `Cost Matrix` = c("Skill","Hierarchy"),
+  Temperature = 2^seq(-1,1,.1)[-11]
+)
 
-P <- sinkhorn_aligned(a_young, b_young, C_skill, epsilon=epsilon_skill, solver=sinkhorn_log)
-#P_p <- sinkhorn_aligned(a_safe, b_safe, C_skill, epsilon=epsilon_skill, solver=ot$sinkhorn)
+fit_grid <- fit_grid |>
+  mutate(
+    P_obs = map(dgp, ~P_fake[[.x]]),
+    C = case_when(
+      `Cost Matrix` == "Skill" ~ list(C_skill),
+      `Cost Matrix` == "Hierarchy"  ~ list(C_hier)
+    )
+  )
 
-check_transport(P$plan, a_safe, b_safe)
- # check_transport(P_p, a_safe, b_safe)
- # compare_transport(P$plan, P_p)
+fit_grid <- fit_grid |>
+  mutate(
+    a = map(P_obs, rowSums),
+    b = map(P_obs, colSums),
+
+    P_hat = pmap(
+      list(a, b, C, Temperature),
+      \(a, b, C, temp)
+      sinkhorn_aligned(a, b, C, temp, sinkhorn_log)$plan
+    )
+  )
+
+fit_grid <- fit_grid |>
+  mutate(
+    `KL-Divergence` = map2_dbl(P_obs, P_hat, kl_score)
+  )
+
+results <- fit_grid |>
+  select(dgp, `Cost Matrix`, Temperature, `KL-Divergence`)|>
+  mutate(
+    dgp = factor(
+      dgp,
+      levels = c(
+       "DGP: 75% Skill / 25% Hierarchy",
+       "DGP: 50% Skill / 50% Hierarchy",
+       "DGP: 25% Skill / 75% Hierarchy",
+       "DGP: 100% Skill",
+       "DGP: Independence",
+       "DGP: 100% Hierarchy"
+      )
+    )
+  )
+
+ggplot(results, aes(Temperature, `KL-Divergence`, colour=`Cost Matrix`))+
+  geom_vline(xintercept = 1, colour="white",lwd=2)+
+  geom_line()+
+  geom_point()+
+  scale_y_continuous(trans="log10")+
+  scale_x_continuous(trans="log2")+
+  facet_wrap(~dgp, nrow=2)+
+  labs(title="Sinkhorn Performance across DGPs by Cost Matrix and Temperature",
+       subtitle="KL-divergence is the log-likelihood loss: lower values indicate better fit",
+       caption="In simulation, the DGP uses 𝜀=1. For the grid search, we intentionally exclude ε=1 to avoid exact parameter recovery")
+#relationship between cost metrics------------------------------------------
+c_skill <- offdiag(C_skill)
+c_hier  <- offdiag(C_hier)
+
+c_both <- tibble(skill=c_skill, hier=c_hier)|>
+  mutate(hier=ordered(hier))
+
+distance_spearman <- round(cor(c_skill, c_hier, method="spearman"),3)
+
+c_both|>
+  filter(hier<max(hier))|>
+ggplot(aes(hier, skill))+
+  geom_jitter(size=.25, alpha=.25)+
+  geom_boxplot(fill="red", alpha=.25, outliers=FALSE)+
+  labs(title=paste("Hierarchical and skill distances: Spearman correlation", distance_spearman),
+       x="Scaled hierarchical distance",
+       y="Scaled skill distance",
+       caption="The maximal hierarchical distance category pools a large number of heterogeneous occupation pairs and is omitted for visual clarity.")+
+  theme_minimal()
+
+#distance plot
+
+hierskill <- distance_plot(P_fake[["DGP: 100% Hierarchy"]], C_skill, subtitle="DGP: Hierarchy | Cost: Skill (mis-match)")
+hierhier <- distance_plot(P_fake[["DGP: 100% Hierarchy"]], C_hier, subtitle="DGP: Hierarchy | Cost: Hierarchy (matched)")
+skillhier <- distance_plot(P_fake[["DGP: 100% Skill"]], C_hier, subtitle="DGP: Skill | Cost: Hierarchy (mis-match)")
+skillskill <- distance_plot(P_fake[["DGP: 100% Skill"]], C_skill, subtitle="DGP: Skill | Cost: Skill (matched)")
+
+(skillskill+skillhier)/(hierhier+hierskill)+
+  plot_annotation(
+    title = "If occupational distance rationalizes mobility, log excess transition probability should decline linearly with distance."
+  )
+
+# by destination gating------------------------------------
+
+noc_specificity <- read_rds(here("out", "noc_specificity.rds"))
+
+dest_plt <- noc_specificity|>
+  ggplot(aes(T, specificity, text=noc, fill=gating_quintile)) +
+  scale_fill_viridis_d()+
+  geom_point(shape=21, size=3, stroke=.5) +
+  scale_x_log10(labels=scales::comma)+
+  labs(fill="Destination Gating Quintile")
+
+p <- ggplotly(dest_plt)
+p$x$data <- rev(p$x$data)
+p
+
+skill_long <- C_skill|>
+  as.data.frame()|>
+  rownames_to_column("origin")|>
+  pivot_longer(-origin, names_to = "destination", values_to = "distance")
+
+hier_long <- C_hier|>
+  as.data.frame()|>
+  rownames_to_column("origin")|>
+  pivot_longer(-origin, names_to = "destination", values_to = "distance")
+
+
+
+gating_quintiles <- noc_specificity |>
+  select(noc, gating_quintile, hier_weight) |>
+  group_by(gating_quintile, hier_weight) |>
+  nest() |>
+  mutate(
+    skill = map(data, \(d)
+                skill_long |>
+                  semi_join(d, by = c("destination" = "noc")) |>
+                  pivot_wider(names_from = destination, values_from = distance) |>
+                  column_to_rownames("origin") |>
+                  as.matrix()
+    ),
+    hier = map(data, \(d)
+               hier_long |>
+                 semi_join(d, by = c("destination" = "noc")) |>
+                 pivot_wider(names_from = destination, values_from = distance) |>
+                 column_to_rownames("origin") |>
+                 as.matrix()
+    ),
+    a=list(enframe(a_old)),
+    b=list(enframe(b_old)),
+    b=map2(data, b, left_join, by=c("noc"="name")),
+    C=pmap(list(skill, hier, hier_weight), weighted_cost),
+    a=map(a, deframe),
+    b=map(b, deframe),
+    simulated = pmap(list(a, b, C), sinkhorn_aligned, epsilon = 1, solver = sinkhorn_log),
+    skill_fit = pmap(list(a, b, skill), sinkhorn_aligned, epsilon = 1, solver = sinkhorn_log),
+    hier_fit =  pmap(list(a, b, hier), sinkhorn_aligned, epsilon = 1, solver = sinkhorn_log))
 
 
 

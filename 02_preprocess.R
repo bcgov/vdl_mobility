@@ -21,8 +21,12 @@ skills$noc_2016_to_noc_2021 <- read_view("noc2016v1_3-noc2021v1_0-eng.csv")|>
   select(noc_2016=`NOC 2016 V1.3 Code`, noc_2021=`NOC 2021 V1.0 Code`, noc2021_title=`NOC 2021 V1.0 Title`)|>
   mutate(noc_2016=str_pad(noc_2016, width=4, pad="0"),
          noc_2021=str_pad(noc_2021, width=5, pad="0"),
-         noc2021_title=if_else(noc_2021 %in% c("00011", "00012", "00013", "00014", "00015"), "Senior managers - public and private sector", noc2021_title),
-         noc_2021=if_else(noc_2021 %in% c("00011", "00012", "00013", "00014", "00015"), "00018", noc_2021)
+         noc2021_title=if_else(noc_2021 %in% c("00011", "00012", "00013", "00014", "00015"),
+                               "Senior managers - public and private sector",
+                               noc2021_title),
+         noc_2021=if_else(noc_2021 %in% c("00011", "00012", "00013", "00014", "00015"),
+                          "00018",
+                          noc_2021)
         )
 
 skills$mapping <- left_join(skills$onet_2019_to_soc_2018, skills$soc_2018_to_noc_2016)|>
@@ -111,7 +115,12 @@ cip_noc <- bcgovpond::read_view("9810040401.csv") |>
          cip     = starts_with("Major"),
          noc     = starts_with("Occupation"),
          value   = VALUE) |>
-  filter(highest != "Total - Highest certificate, diploma or degree")
+  filter(highest != "Total - Highest certificate, diploma or degree",
+         !str_detect(noc, "44200")#no skill data for primary combat members
+         )|>
+  mutate(noc = str_replace(noc, "^(.{5})", "\\1:"),
+         noc = str_replace(noc, "Seniors", "Senior")
+         )
 
 #education proportions (aggregation across nocs)
 dest_p0 <- cip_noc |>
@@ -141,7 +150,14 @@ dest_fit_kl <- lm(log(KL) ~ log(T), data = noc_specificity)
 noc_specificity <- noc_specificity |>
   mutate(
     specificity = log(KL) - predict(dest_fit_kl),
-    TEER=str_sub(noc, 2,2))
+    TEER = str_sub(noc, 2, 2),
+    gating_quintile = ntile(specificity, 5),
+    hier_weight = (gating_quintile - 1) / 4,
+    gating_quintile = factor(
+      gating_quintile,
+      labels = c("Lowest gating","Q2","Q3","Q4","Highest gating")
+    )
+  )
 
 #education specificity
 

@@ -124,8 +124,6 @@ sinkhorn_log <- function(a, b, C, epsilon,
 
   logP <- outer(log_u, log_v, "+") + logK
   P <- exp(logP)
-  P <- P / sum(P)
-
   list(plan = P, log_u = log_u, log_v = log_v)
 }
 

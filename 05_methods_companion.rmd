@@ -71,11 +71,11 @@ skills_ylab <- as.character(rownames(skills_mat_ord))
 
 
 dest_plt <- noc_specificity|>
-  ggplot(aes(T, specificity, text=noc, colour=TEER)) +
-  scale_colour_viridis_d()+
-  geom_hline(yintercept = median(noc_specificity$specificity), colour="white", lwd=2)+
-  geom_point() +
-  scale_x_log10(labels=scales::comma)
+  ggplot(aes(T, specificity, text=noc, fill=gating_quintile)) +
+  scale_fill_viridis_d()+
+  geom_point(shape=21, size=3, stroke=.5) +
+  scale_x_log10(labels=scales::comma)+
+  labs(fill="Gating Quintile")
 
 dest_spear <- round(cor(noc_specificity$T, noc_specificity$specificity, method = "spearman"),2)
 dest_pear <- round(cor(noc_specificity$T, noc_specificity$specificity),2)
@@ -334,7 +334,9 @@ Column {data-width=400}
 ### High specificity indicates few educational pathways into the occupation; residualized specificity is not correlated with log occupation size (Pearson=`r dest_pear`, Spearman=`r dest_spear`).
 
 ```{r}
-plotly::ggplotly(dest_plt)
+p <- ggplotly(dest_plt)
+p$x$data <- rev(p$x$data)
+p
 ```
 
 
@@ -345,7 +347,7 @@ Column {data-width=300}
 
 ```{r}
 noc_specificity|>
-  select(noc, specificity)|>
+  select(noc, specificity, gating_quintile)|>
   arrange(desc(specificity))|>
   my_dt()
 ```

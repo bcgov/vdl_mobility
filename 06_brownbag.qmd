@@ -11,6 +11,15 @@ format:
     width: 1280
 ---
 
+In simulation, the DGP uses 𝜀=1. For the grid search, we intentionally exclude 
+ε=1 to avoid exact parameter recovery and to assess sensitivity to discretization; consequently, even the correctly specified cost matrix attains a small but nonzero minimum KL.
+
+KL divergence is to think of it as measuring how surprised you would be if the model were the true generator of the data. 
+KL divergence is the log-likelihood loss function for multinomial data.
+We care most about accurately predicting the transitions workers actually make.
+KL divergence measures how much extra information is required to encode observed occupational transitions using the probabilities implied by a given distance structure. Lower KL therefore indicates a distance matrix whose implied substitution patterns more closely match observed mobility behavior.
+
+
 We verified the R log-domain Sinkhorn implementation against the Python POT library on the full skill-cost matrix. Both solutions satisfied marginal constraints to <1e−11 and agreed to numerical precision (max absolute difference 2.8e−12; relative Frobenius difference 3.5e−10).
 
 The entropy-regularized transport model is equivalent to a doubly-constrained gravity model of occupational mobility, where distance is defined either by skill similarity or by institutional hierarchy.

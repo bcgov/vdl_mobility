@@ -136,4 +136,49 @@ offdiag <- function(M) {
   M[row(M) != col(M)]
 }
 
+outer_named <- function(a, b) {
+  M <- a %o% b
+  rownames(M) <- names(a)
+  colnames(M) <- names(b)
+  M
+}
+
+distance_plot <- function(P_obs, C, subtitle) {
+
+  a <- rowSums(P_obs)
+  b <- colSums(P_obs)
+
+  df <- tibble(
+    distance = as.vector(C),
+    ratio = log(as.vector(P_obs) / as.vector(a %o% b))
+  ) |>
+    filter(distance > 0)
+
+  ggplot(df, aes(distance, ratio)) +
+    geom_jitter(alpha = 0.01) +
+    geom_smooth(method="lm", se=FALSE, colour="red")+
+#    scale_y_log10() +
+    labs(
+      x = "Occupational distance (normalized)",
+      y = "Log excess transition probability (relative to independence)",
+      title = NULL,
+      subtitle=subtitle
+    )
+}
+
+long_to_matrix <- function(tbbl){
+  tbbl|>
+    pivot_wider(id_cols = origin, names_from = noc, values_from = distance)|>
+    column_to_rownames("origin")|>
+    matrix()
+}
+
+weighted_cost <- function(s, h, h_weight){
+   h_weight*h+(1-h_weight)*s
+}
+
+
+
+
+
 
