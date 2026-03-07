@@ -151,11 +151,11 @@ noc_specificity <- noc_specificity |>
   mutate(
     specificity = log(KL) - predict(dest_fit_kl),
     TEER = str_sub(noc, 2, 2),
-    gating_quintile = ntile(specificity, 5),
-    hier_weight = (gating_quintile - 1) / 4,
-    gating_quintile = factor(
-      gating_quintile,
-      labels = c("Lowest gating","Q2","Q3","Q4","Highest gating")
+    gating_quartile = ntile(specificity, 4),
+    hier_weight = (gating_quartile-1)/3,
+    gating_quartile = factor(
+      gating_quartile,
+      labels = c("Lowest gating","Q2","Q3","Highest gating")
     )
   )
 

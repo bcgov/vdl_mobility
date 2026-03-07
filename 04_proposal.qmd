@@ -96,6 +96,24 @@ Thus, optimal transport provides a benchmark allocation, while the regularized p
 
 Because occupational growth and decline are imposed by construction, the model is evaluated on the composition of flows rather than on employment levels. With origin and destination totals fixed, distance can shape only bilateral substitution patterns among reallocating workers. This conditioning isolates the role of transition costs from changes in occupational employment and distinguishes the transport equilibrium from unconstrained gravity-style regressions that do not impose joint mass conservation.
 
+## Relation to Gravity Models
+
+The solution to the entropy-regularized transport problem takes the form
+
+$$
+P_{ij}^{\star} = a_i^{\star} b_j^{\star} \exp(-C_{ij}/\varepsilon)
+$$
+
+Taking logs yields
+
+$$
+\log P_{ij}^{\star} = \log a_i^{\star} + \log b_j^{\star} - C_{ij}/\varepsilon ,
+$$
+
+which is formally identical to a gravity model with origin and destination fixed effects.
+
+The difference lies in identification. In gravity models the fixed effects and the cost parameter are estimated jointly. In the Sinkhorn formulation the margins are imposed as constraints, so candidate cost matrices are evaluated solely on their ability to rationalize the residual structure of flows.
+
 We next construct candidate occupational distance measures that discipline substitution patterns in the transport model.
 
 ## Distance Metrics
@@ -136,7 +154,7 @@ We evaluate the transport model along four dimensions. The null hypothesis is th
 
 ## Does the exponential distance structure describe observed flows?
 
-Under entropic transport, bilateral flows are proportional to the exponential of negative distance, up to origin and destination scaling factors that enforce observed marginals. This implies a log-linear relationship between flows and distance and restricts dispersion among occupation pairs with identical costs. We therefore test whether observed flows exhibit this exponential structure rather than merely declining monotonically with distance. Large heterogeneity among equal-cost pairs or systematic curvature inconsistent with the log-linear form would constitute evidence against the model.
+Under entropic transport, log excess transition probability declines linearly with distance. This implies an exponential relationship between flows and distance and restricts dispersion among occupation pairs with identical costs. We therefore test whether observed flows exhibit this exponential structure rather than merely declining monotonically with distance. Large heterogeneity among equal-cost pairs or systematic curvature inconsistent with the log-linear form would constitute evidence against the model.
 
 ## Which distance metric better captures mobility frictions?
 

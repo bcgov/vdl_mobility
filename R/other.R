@@ -36,7 +36,7 @@ cumvar_explained <- function(pca_obj, x) {
   sum(prop_var[seq_len(x)]) * 100
 }
 
-plot_pca_variance <- function(pca_obj, n_comp = 10, digits = 1) {
+plot_pca_variance <- function(pca_obj, n_comp = 10, digits = 1, text_size=3.5) {
 
   if (!inherits(pca_obj, "prcomp")) {
     stop("Input must be a prcomp object.")
@@ -69,7 +69,7 @@ plot_pca_variance <- function(pca_obj, n_comp = 10, digits = 1) {
     geom_text(
       aes(y = Percent, label = Percent_lab),
       vjust = -0.5,
-      size = 3.5
+      size = text_size
     ) +
 
     # Cumulative line + points
@@ -81,7 +81,7 @@ plot_pca_variance <- function(pca_obj, n_comp = 10, digits = 1) {
       data = df[-1, ],
       aes(y = Cumulative, label = Cum_lab),
       vjust = -0.8,
-      size = 3.5
+      size = text_size
     ) +
 
     scale_y_continuous(
@@ -177,7 +177,28 @@ weighted_cost <- function(s, h, h_weight){
    h_weight*h+(1-h_weight)*s
 }
 
-
+noc_prop_plot <- function(tbbl, inital_age, subsequent_age){
+  tbbl|>
+    filter((syear==2011 & age10==inital_age)| (syear==2021 & age10==subsequent_age))|>
+    group_by(syear, age10)|>
+    mutate(prop=count/sum(count))|>
+    select(syear, noc_plus_title, prop)|>
+    pivot_wider(id_cols = noc_plus_title, names_from = syear, values_from = prop)|>
+    mutate(diff=`2021`-`2011`,
+           abs_diff=abs(diff))|>
+    slice_max(abs_diff, n=20)|>
+    ggplot(aes(diff, fct_reorder(noc_plus_title, -diff)))+
+    geom_col(alpha=.5)+
+    scale_x_continuous(limits = c(-.075,.025))+
+    labs(title=paste("Change in Occupational Proportions between",inital_age,"and",subsequent_age,"year olds (ten years later)"),
+         x="Change in Proportion",
+         y=NULL,
+         caption="Source: LFS via RTRA")+
+#    theme_minimal()+
+    theme(
+      plot.title.position = "plot"
+    )
+}
 
 
 
