@@ -192,8 +192,6 @@ Field-of-study specificity interacts with timing. During the inter-census period
 
 These distinctions imply that the aggregate transport model should describe mobility primarily among workers with pre-2016 education, for whom occupational change reflects reallocation of an established human-capital bundle. For workers completing education during 2016–2021, transitions reflect entry into newly feasible occupations rather than friction-constrained switching, so a distance-based transport structure need not hold. We therefore expect the transport structure to be most evident in the post-schooling regime and to vary systematically with education specificity.
 
-
-
 ## Education Specificity
 
 We construct a **size-adjusted measure of education specificity** using a cross-tabulation of field of study (CIP), highest attainment, and occupation (NOC).  The objective is to quantify how informative a given education is about occupational outcomes. Occupational distributions are inferred from finite counts, and small cells (fewer than ten individuals) are suppressed, causing traditional concentration measures (e.g., Herfindahl–Hirschman Index, entropy, support size) to depend mechanically on sample size rather than true specialization.

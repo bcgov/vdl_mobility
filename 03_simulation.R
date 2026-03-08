@@ -1,6 +1,3 @@
- # library(reticulate)
- # reticulate::py_require("POT")
- # ot <- import("ot")
 library(tidyverse)
 library(here)
 library(janitor)
@@ -9,13 +6,13 @@ library(bcgovpond)
 library(patchwork)
 library(matrixStats)
 library(plotly)
+library(safesink)
 library(conflicted)
 conflicts_prefer(vroom::cols)
 conflicts_prefer(vroom::col_double)
 conflicts_prefer(vroom::col_character)
 conflicts_prefer(dplyr::filter)
 
-source(here("R","sinkhorn_utils.R"))
 source(here("R", "other.R"))
 plots <- list()
 #read data-------------------
@@ -214,17 +211,6 @@ plots$linearity <-((skillskill + skillhier) /(hierhier + hierskill))
 # by destination gating------------------------------------
 
 noc_specificity <- read_rds(here("out", "noc_specificity.rds"))
-
-dest_plt <- noc_specificity|>
-  ggplot(aes(T, specificity, text=noc, fill=gating_quartile)) +
-  scale_fill_viridis_d()+
-  geom_point(shape=21, size=3, stroke=.5) +
-  scale_x_log10(labels=scales::comma)+
-  labs(fill="Destination Gating Quartile")
-
-p <- ggplotly(dest_plt)
-p$x$data <- rev(p$x$data)
-p
 
 skill_long <- C_skill|>
   as.data.frame()|>
