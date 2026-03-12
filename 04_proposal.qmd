@@ -32,7 +32,7 @@ Labour markets must continually reallocate workers as technological change, indu
 
 This paper asks whether occupational mobility among workers with stable human capital follows the structure predicted by entropy-regularized optimal transport, and conditional on this structure, which notion of occupational distance best rationalizes observed transitions. The 2016–2021 Canadian Census period provides a useful setting to study this question because it includes the COVID-19 shock, which generated substantial contractions and expansions across sectors.
 
-Consistent with evidence that workers tend to transition between occupations with similar task requirements @autor2013growth, we model occupational mobility as declining with distance in occupational space. Our framework embeds this idea in a multinomial logit random utility model and solves for equilibrium flows using entropy-regularized optimal transport.
+Consistent with evidence that workers tend to transition between occupations with similar task requirements [@gathmann2010general], we model occupational mobility as declining with distance in occupational space. Our framework embeds this idea in a multinomial logit random utility model and solves for equilibrium flows using entropy-regularized optimal transport.
 
 Unlike prior work that evaluates occupational distance indirectly through wages or reduced-form elasticities, this paper tests whether a candidate distance metric rationalizes the full observed transition matrix conditional on origin and destination totals. With linked Census data, optimal transport becomes a falsifiable allocation benchmark rather than an imputation device.
 
