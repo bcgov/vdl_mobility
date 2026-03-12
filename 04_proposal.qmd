@@ -14,25 +14,41 @@ header-includes:
   - \DeclareMathOperator*{\argmin}{argmin}
 ---
 
-# Research Proposal:
+## Research Proposal 
 
-This document outlines a proposed research project designed to evaluate whether occupational mobility in Canada follows a cost-minimizing transport structure. Detailed construction of distance measures, calibration procedures, and diagnostic evidence are documented in an accompanying [Methods Companion](https://rpubs.com/rpmartin/1401993). The analysis requires access to unsuppressed linked 2016 and 2021 Census microdata available only through the Statistics Canada Virtual Data Lab (VDL). The project will develop, estimate, and rigorously test alternative distance-based models of occupational mobility, with the goal of informing both academic research and workforce policy.
+This document outlines a proposed research project designed to evaluate whether occupational mobility in Canada follows a cost-minimizing transport structure. Detailed construction of distance measures, calibration procedures, and diagnostic evidence are documented in an accompanying Methods Companion. The analysis requires access to unsuppressed linked 2016 and 2021 Census microdata available only through the Statistics Canada Virtual Data Lab (VDL). The project will develop, estimate, and rigorously test alternative distance-based models of occupational mobility, with the goal of informing both academic research and workforce policy.
+
+Workforce development policies increasingly assume that workers can transition between occupations requiring similar skill sets. This assumption underlies a wide range of policy tools, including labour market forecasts, career navigation platforms, and reskilling initiatives designed to move workers into emerging occupations. In effect, many workforce development strategies implicitly rely on a model of occupational mobility structured by skill proximity.
+
+Despite the central role of this assumption in policy design, there is limited direct evidence on whether occupational mobility actually follows this pattern. In practice, labour market transitions may also be shaped by institutional structures such as credential requirements, occupational hierarchies, and other barriers that restrict which transitions are feasible. If these institutional factors dominate mobility patterns, policies built on skill-based mobility assumptions may systematically overestimate the ease with which workers can move into new occupations.
+
+This project addresses this gap by evaluating how well different notions of occupational distance explain observed mobility patterns. Specifically, the analysis compares skill-based distance measures derived from occupational task profiles with hierarchical measures based on the National Occupational Classification (NOC). By testing which notion of distance better rationalizes observed occupational transitions, the project provides direct evidence on whether widely used career pathway frameworks accurately reflect labour market dynamics.
+
+The results will help inform the design of workforce planning tools and reskilling initiatives by clarifying the extent to which workers can realistically transition between occupations based on their existing skill sets, and the extent to which institutional barriers constrain those transitions.
 
 # Introduction
 
-How do labour markets reallocate workers when occupational demand changes? Observed transitions between linked 2016 and 2021 Canadian Censuses reflect both shifts in labour demand and the difficulty of transferring existing skills across occupations. The 2016–2021 period includes the COVID-19 shock, which generated substantial sectoral contractions and expansions. Because changes in occupational employment mechanically induce inflows and outflows, raw transition patterns do not directly reveal mobility frictions. The central challenge is therefore to distinguish reallocations driven by changes in occupational employment from those shaped by transition costs.
+Labour markets must continually reallocate workers as technological change, industry restructuring, and demographic shifts alter the demand for occupations. Observed occupational transitions reflect both changes in labour demand and the difficulty of transferring existing skills across occupations. Because changes in occupational employment mechanically induce inflows and outflows, raw transition patterns do not directly reveal mobility frictions.
 
-This question is increasingly important as technological change, industry restructuring, and demographic shifts alter occupational demand. Understanding whether mobility is governed by transferable skills or institutional segmentation is central to assessing the speed and nature of labour-market adjustment.
+This paper asks whether occupational mobility among workers with stable human capital follows the structure predicted by entropy-regularized optimal transport, and conditional on this structure, which notion of occupational distance best rationalizes observed transitions. The 2016–2021 Canadian Census period provides a useful setting to study this question because it includes the COVID-19 shock, which generated substantial contractions and expansions across sectors.
 
-Unlike prior work that evaluates occupational distance indirectly through wages or reduced-form elasticities, this paper tests whether a candidate distance metric rationalizes the full observed transition matrix conditional on origin and destination totals. With linked Census data, optimal transport becomes a falsifiable allocation benchmark rather than an imputation device. Comparing skill-based and hierarchical distances — and allowing their performance to vary across destination education-gating regimes — distinguishes frictions arising from transferable human capital from those rooted in institutional and credential segmentation.
+Consistent with evidence that workers tend to transition between occupations with similar task requirements @autor2013growth, we model occupational mobility as declining with distance in occupational space. Our framework embeds this idea in a multinomial logit random utility model and solves for equilibrium flows using entropy-regularized optimal transport.
 
-We implement this approach by conditioning on observed occupational marginals and asking where workers must come from to reconcile observed flows with cost minimization. The transport equilibrium can match observed transitions only if workers disproportionately move between nearby occupations in the proposed distance metric; it cannot succeed merely by reproducing occupational growth or decline. We estimate an entropy-regularized version that allows decentralized choice while preserving accounting constraints.
+Unlike prior work that evaluates occupational distance indirectly through wages or reduced-form elasticities, this paper tests whether a candidate distance metric rationalizes the full observed transition matrix conditional on origin and destination totals. With linked Census data, optimal transport becomes a falsifiable allocation benchmark rather than an imputation device.
 
-We partition workers by the timing of their most recent educational attainment: those whose education was completed prior to 2016 (“pre-2016 education”) and those whose education was completed during the 2016–2021 inter-census period (“inter-census education”). When workers acquire new education, their human capital bundle changes, shifting their location in the occupational cost geometry. For these workers, the 2016 occupation does not represent a fixed origin at the time of transition. The transport framework is therefore most informative for workers with pre-2016 education, while the inter-census group serves as a structural contrast: if the framework captures reallocation of fixed human capital, its fit should weaken in this regime.
+We implement this approach by conditioning on observed occupational marginals and asking which transition matrix best reconciles the flows with the friction penalties implied by the distance matrix. The transport equilibrium can match the data only if workers disproportionately move between nearby occupations in the proposed distance metric; it cannot succeed merely by reproducing occupational growth or decline. We estimate an entropy-regularized version that allows decentralized choice while preserving the observed accounting constraints.
 
-Workers completing education between census waves differ systematically from those whose education predates 2016, including in age, career stage, and origin occupation. Comparisons across timing groups are therefore not interpreted causally. Rather, the partition isolates a regime in which human capital is plausibly stable over the period, enabling a cleaner assessment of distance-based frictions. Differences in model performance may reflect both regime distinctions and compositional differences.
+We partition workers according to whether their highest educational attainment increased between 2016 and 2021. For the stable attainment group, the origin occupation provides a clear signal of the worker’s location in skill space, and occupational distance is expected to rationalize mobility patterns. For example, a university professor with a Ph.D. in 2016 who becomes an economist with a Ph.D. in 2021 represents the type of transition that occupational distance can plausibly rationalize.
 
-We evaluate whether mobility among workers with pre-2016 education follows a cost-minimizing transport structure. Within this framework, we compare skill-based and hierarchical distance metrics and allow explanatory power to vary across destination education-gating regimes. If supported by the data, the results identify the economically relevant geometry of occupational distance and provide a disciplined framework for understanding labour-market adjustment.
+In contrast, for the attainment increase group, new training may allow workers to move to occupations that are quite distant from their original occupation. For example, a cashier with a B.Sc. in 2016 who becomes a physician in 2021 with an M.D. has acquired new human capital that permits such a large occupational jump. Occupational distances derived from the initial occupation will therefore struggle to rationalize this mobility. This group provides a structural contrast: if the framework captures the reallocation of fixed human capital, its fit should weaken.
+
+This partition ignores new credentials that do not change an individual’s highest level of educational attainment. Such cases are relatively infrequent (n.b. should show using BC education data) and are less likely to substantially alter a worker’s human capital than the acquisition of a new highest credential.
+
+The two groups likely differ in other ways as well, including age, career stage, and origin occupation. Comparisons across the groups are therefore not interpreted causally. Rather, the partition isolates a regime in which human capital is plausibly stable over the period, illustrating when a distance-based mobility model should perform well and when it is expected to fail. Differences in model performance may therefore reflect both the regime distinction and compositional differences, rather than the causal effect of increases in highest educational attainment. The comparison is intended to assess whether a distance-based model explains mobility when human capital is fixed, not whether education itself causes mobility to deviate from the model.
+
+We evaluate whether mobility in the stable attainment group follows a cost-minimizing transport structure. Within this framework, we compare skill-based and hierarchical distance metrics and allow explanatory power to vary across destination education-gating regimes. If supported by the data, the results identify the economically relevant geometry of occupational distance and provide a disciplined framework for understanding labour-market adjustment.
+
+The analysis proceeds in three steps. First, we evaluate whether occupational mobility among workers with stable human capital exhibits the exponential distance structure implied by entropy-regularized optimal transport. Second, we compare competing notions of occupational distance — skill similarity and hierarchical classification — and examine how their explanatory power varies across destination education-gating regimes. Third, we study workers who acquire new credentials between censuses to understand when education enables mobility that bypasses the distance constraints governing ordinary reallocation.
 
 # Literature Review
 
@@ -72,7 +88,7 @@ $$
 
 where $\Pi(a,b)=\{P\ge0: P\mathbf{1}=a,\;P^\top\mathbf{1}=b\}$.
 
-Observed mobility reflects decentralized decisions by heterogeneous workers facing imperfect information and idiosyncratic preferences. Introducing an entropic perturbation yields the equilibrium allocation generated by random utility choice with occupation-specific fixed effects determined endogenously to satisfy labour-market clearing.
+Observed mobility reflects decentralized decisions by heterogeneous workers facing imperfect information and idiosyncratic preferences. Introducing an entropic perturbation yields the equilibrium allocation generated by random utility choice with occupation-specific fixed effects determined endogenously to satisfy labour-market clearing. Entropy-regularized optimal transport is equivalent to decentralized choice under logit frictions, making it a natural equilibrium benchmark for mobility decisions.
 
 $$
 P_\varepsilon = \argmin_{P\in\Pi(a,b)} \sum_{ij} C_{ij}P_{ij}+ \varepsilon \sum_{ij}P_{ij}(\log P_{ij}-1)
@@ -126,8 +142,6 @@ We construct a skill-based occupational distance using the O\*NET database, whic
 
 Seven NOCs lack a direct mapping to O\*NET occupations. For these cases, we assign skill vectors equal to the mean skill profile of their corresponding four-digit NOC group, preserving classification structure while avoiding arbitrary imputation. One occupation (44200: Primary combat members of the Canadian Armed Forces) lacks a corresponding four-digit aggregate and is therefore excluded.
 
-The resulting matrix displays clear economic structure: diagonal elements are zero by construction, and blocks of low distance correspond to occupations sharing similar skill requirements. Conversely, certain occupations (e.g., NOC 55109, “Other performers”) are distant from nearly all others, particularly technical and managerial roles, indicating highly specialized skill bundles. These patterns suggest the reduced skill space captures economically meaningful differences in transferability rather than statistical noise.
-
 ### Hierarchical distance
 
 The NOC classification provides an alternative notion of occupational proximity based on institutional and hierarchical structure rather than measured human capital similarity. NOC is a nested taxonomy in which additional digits progressively refine work descriptions along task, responsibility, and credential dimensions. In the 2021 classification, occupations are coded at five digits, with each additional digit representing a finer level of specialization.
@@ -144,7 +158,7 @@ The hierarchical distance matrix is discrete and contains large plateaus of equa
 
 ### Regularization Calibration
 
-As a baseline, we define “local” hierarchical mobility using the distribution of non-maximal hierarchical distances (excluding pairs at the maximal category distance). We take the 25th, 50th, and 75th percentiles of this non-maximal distribution as alternative locality anchors. For each anchor value, we compute its percentile location within the full hierarchical distance distribution (including maximal-distance pairs), and apply that percentile to the skill-distance distribution to obtain a comparable characteristic skill cost. We then set the regularization parameter equal to the corresponding characteristic cost in each metric, so that the exponential kernel downweights a “typical local” move by a comparable factor across metrics.
+As a baseline, we define “local” hierarchical mobility using the distribution of non-maximal hierarchical distances (excluding pairs at the maximal category distance). We take the 25th, 50th, and 75th percentiles of this non-maximal distribution as alternative locality anchors. For each anchor value, we compute its percentile location within the full hierarchical distance distribution (including maximal-distance pairs), and apply that percentile to the skill-distance distribution to obtain a comparable characteristic skill cost. We then set the regularization parameter equal to the corresponding characteristic cost in each metric, so that the exponential kernel downweights a “typical local” move by a comparable factor across metrics. The objective is comparability across metrics, not structural estimation of $\varepsilon$.
 
 This mapping ensures that regularization strength reflects comparable substitution margins across metrics, while allowing robustness to how “local” is defined within the informative region of the hierarchical metric. As a separate robustness check, we report sensitivity to proportional rescalings of $\varepsilon$ around each anchored baseline (e.g., multiplying by 0.5 and 2), holding the anchor definition fixed.
 
@@ -158,13 +172,13 @@ Under entropic transport, log excess transition probability declines linearly wi
 
 ## Which distance metric better captures mobility frictions?
 
-We compare model-implied and observed bilateral flows under alternative distance matrices. Because origin and destination marginals are imposed, evaluation focuses exclusively on the composition of flows across occupation pairs. The preferred metric is the one whose implied allocation most closely approximates the observed transition matrix according to pre-specified cross-entropy criteria.
+We compare model-implied and observed bilateral flows under alternative distance matrices. Because origin and destination marginals are imposed, evaluation focuses exclusively on the composition of flows across occupation pairs. The preferred metric is the one whose implied allocation most closely approximates the observed transition matrix according to Kullback–Leibler (KL) divergence.
 
 ## Is there heterogeneity by destination education gating intensity?
 
 Occupational transitions may be governed by different frictions across segments of the labour market. In particular, occupations vary in the extent to which entry is tightly linked to specific educational credentials.
 
-To capture this heterogeneity, we construct a size-adjusted measure of **destination education gating intensity** based on the Kullback–Leibler divergence between the education distribution within each occupation and the overall education distribution of the workforce.
+To capture this heterogeneity, we construct a size-adjusted measure of **destination education gating intensity** based on the KL divergence between the education distribution within each occupation and the overall education distribution of the workforce.
 
 For each occupation $n$, let $p(e \mid n)$ denote the distribution of highest-attained education and field of study among workers in that occupation, and let $p(e)$ denote the corresponding distribution in the labour market as a whole. We define occupational gating intensity as
 
@@ -178,23 +192,23 @@ We partition destination occupations into high- and low-gating groups using a pr
 
 The regularization parameter is held fixed across distance metrics and destination regimes so that differences in model performance reflect cost structure rather than parameter tuning. The regularization parameter is fixed prior to model comparison and is not tuned to maximize fit for any specific distance metric.
 
-## Does the model primarily describe post-schooling mobility?
+## Does the model primarily describe *stable attainment* group?
 
-The transport mechanism is intended to describe reallocation of existing human capital. We therefore estimate the model separately for workers whose most recent credential predates 2016 and for those who acquire new education between census waves. If mobility following credential attainment reflects sorting into newly accessible occupations rather than friction-constrained reallocation, the transport structure should weaken in that regime.
+The transport mechanism is intended to describe reallocation of existing human capital. We therefore estimate the model separately for the *stable attainment* and *attainment increase* groups. If mobility following credential attainment reflects sorting into newly accessible occupations rather than friction-constrained reallocation, the transport structure should weaken in that group. We now turn to cases where human capital changes between censuses, and mobility may bypass these distance frictions.
 
 # Individual mobility
 
-Individual occupational mobility can be characterized either as a binary outcome — remaining in the same occupation or switching — or as the distance traveled between origin and destination occupations. The effect of education on these measures depends critically on both the timing and specificity of an individual’s most recent attainment.
+If occupational mobility primarily reflects reallocation of fixed human capital, the transport framework should describe most worker transitions. However, *attainment increase* may allow workers to bypass these frictions. The individual-level analysis therefore examines the circumstances under which workers make large occupational jumps that violate the distance-based mobility structure.
 
-When education occurs between the 2016 and 2021 censuses, occupational change largely reflects entry into a newly acquired human-capital bundle rather than reallocation of existing skills. In this inter-census regime, transitions are common and may span large occupational distances as individuals move toward occupations for which they have newly become qualified. By contrast, when the most recent education predates 2016, observed mobility represents switching between occupations using an already established human-capital bundle. In this post-schooling regime, occupational change is less frequent and tends to occur over shorter distances.
+We hypothesize that two characteristics are associated with larger occupational jumps. The first is the occupational specificity of an educational program, defined as how concentrated a program’s graduates are across occupations relative to the overall education distribution. The second is the educational specificity of destination occupations, defined as how concentrated an occupation’s entrants are across programs relative to the overall employment distribution. Highly specific educational programs and strongly gated occupations both create targeted entry pathways that allow workers to bypass the gradual occupational adjustments implied by distance-based mobility.
 
-Field-of-study specificity interacts with timing. During the inter-census period, specialized education generates larger and more concentrated moves toward a narrow set of destinations as workers enter newly accessible occupations, whereas general education produces smaller and more diffuse moves. After schooling is completed, the relationship reverses: specific training anchors workers to closely related occupations, reducing both the probability of switching and the distance moved, while general education permits broader reallocation.
+Both measures are constructed from the 2021 Census NOC–CIP–attainment table, rather than the linked census microdata used to measure occupational transitions.
 
-These distinctions imply that the aggregate transport model should describe mobility primarily among workers with pre-2016 education, for whom occupational change reflects reallocation of an established human-capital bundle. For workers completing education during 2016–2021, transitions reflect entry into newly feasible occupations rather than friction-constrained switching, so a distance-based transport structure need not hold. We therefore expect the transport structure to be most evident in the post-schooling regime and to vary systematically with education specificity.
+To account for differences in starting positions within occupational space, the regressions include origin occupation fixed effects (2-digit NOC). These controls help block potential confounding between the distance traveled and the individual's choice of education.
 
 ## Education Specificity
 
-We construct a **size-adjusted measure of education specificity** using a cross-tabulation of field of study (CIP), highest attainment, and occupation (NOC).  The objective is to quantify how informative a given education is about occupational outcomes. Occupational distributions are inferred from finite counts, and small cells (fewer than ten individuals) are suppressed, causing traditional concentration measures (e.g., Herfindahl–Hirschman Index, entropy, support size) to depend mechanically on sample size rather than true specialization.
+We construct a **size-adjusted measure of education specificity** using a cross-tabulation of field of study (CIP), highest attainment, and occupation (NOC). This measure is the flip side of destination gating which was described in the aggregate mobility section.  The objective here is to quantify how informative a given education is about occupational outcomes. Occupational distributions are inferred from finite counts, and small cells (fewer than ten individuals) are suppressed, causing traditional concentration measures (e.g., Herfindahl–Hirschman Index, entropy, support size) to depend mechanically on sample size rather than true specialization.
 
 We instead measure how distinct an education’s occupational distribution is from the overall labour market distribution using Kullback–Leibler (KL) divergence. For each field-of-study × attainment group $e$, let $p_e(n)$ denote the share of workers employed in occupation $n$, and let $p_0(n)$ denote the occupational distribution of the educated workforce as a whole. Educational specificity is defined as
 
@@ -208,64 +222,31 @@ which measures how much knowing an individual’s education shifts expectations 
 
 Raw divergence nevertheless increases mechanically for small groups. We therefore residualize $\log D_{KL}$ with respect to group size using an OLS regression of log divergence on log group size, yielding a size-adjusted index that captures occupational distinctiveness rather than sampling noise. The resulting measure reflects how strongly an education channels workers into particular occupations and serves as our measure of educational specificity.
 
-# Individual-Level Tests of Educational Specificity
+## Regression specification
 
-Complementing the aggregate transport analysis, we examine individual-level mobility using regression-based models. The primary outcome is the probability of occupational switching; transition distance conditional on switching is analyzed as a secondary diagnostic outcome.
+To examine the determinants of education-enabled occupational jumps, we estimate a regression relating the distance between an individual’s 2016 and 2021 occupations to measures of educational specificity and destination gating. The sample is restricted to individuals whose most recent educational attainment occurs between the 2016 and 2021 censuses.
 
-## Extensive Margin: Probability of Occupational Switching
-
-We estimate logit or probit models of the form:
+The baseline specification is
 
 $$
-\Pr(\text{transition}_{i} = 1)
-= f(\text{specificity}_i,\ \text{timing}_i,\ \text{specificity}_i \times \text{timing}_i).
+d_i = \alpha + \beta_1 S_i + \beta_2 G_i + \beta_3 (S_i \times G_i) + \gamma_{o(i)} + \varepsilon_i
 $$
 
-Here, specificity measures the concentration of occupational outcomes associated with a field of study, and timing indicates whether the individual has inter-census education or pre-2016 education.
 
-If occupational mobility reflects friction-constrained reallocation of existing human capital, higher educational specificity should reduce the likelihood of occupational switching among workers with pre-2016 education. In contrast, among workers with inter-census education, specificity is expected to increase switching probability, reflecting entry into credential-targeted occupations.
+where $d_i$ denotes the occupational distance traveled between 2016 and 2021 for individual $i$. Distances are measured separately using the skill-based metric derived from O*NET and the hierarchical distance derived from the NOC classification. 
 
-Evidence consistent with the transport interpretation would include (i) a negative association between specificity and switching probability among workers with pre-2016 education and (ii) a positive interaction between specificity and inter-census education. Together, these gradients imply a ranking of switching probabilities from highest to lowest:
+The variable $S_i$ represents the size-adjusted **education specificity** of the individual’s most recent field-of-study $\times$ attainment group, constructed from the 2021 Census CIP--NOC--attainment table. Higher values indicate educational programs whose graduates are concentrated in a narrower set of occupations.
 
-1)  Inter-census/Specific
+The variable $G_i$ represents the **destination gating** measure for the individual’s 2021 occupation. This measure captures the extent to which entry into a given occupation is concentrated among a narrow set of educational programs.
 
-2)  Inter-census/General
+The term $\gamma_{o(i)}$ denotes **origin occupation fixed effects** at the 2-digit NOC level. These controls account for differences in workers’ starting positions within occupational space, ensuring that identification comes from comparisons among workers beginning in similar parts of the labour market.
 
-3)  Pre-2016/General
+A positive coefficient on education specificity would indicate that more targeted educational programs are associated with larger occupational jumps. A positive coefficient on destination gating would indicate that entry into more tightly credentialed occupations is associated with larger jumps. A positive interaction term would suggest that the largest movements occur when highly specific programs channel workers into strongly gated occupations.
 
-4)  Pre-2016/Specific.
 
-## Intensive Margin (Secondary Outcome): Transition Distance Conditional on Switching
 
-Conditional on occupational transition, we estimate models of the form:
 
-$$
-\text{distance}_i
-= \beta_0 + \beta_1 \text{specificity}_i 
-+ \beta_2 \text{timing}_i 
-+ \beta_3 (\text{specificity}_i \times \text{timing}_i) 
-+ \varepsilon_i.
-$$
 
-Among workers with pre-2016 education, higher specificity should be associated with shorter transition distances, reflecting movement within a narrower feasible set of occupations.
-
-For workers with inter-census education, the effect on transition distance is theoretically ambiguous. If transitions primarily reflect movement from unrelated pre-credential employment (e.g., student jobs) into specialized occupations, distances may be large. If instead individuals upgrade within related occupational pathways (e.g., aide to nurse, apprentice to journeyperson), distances may be smaller.
-
-To distinguish these mechanisms, we explore heterogeneity by age in 2016. Younger inter-census graduates are more likely to transition from low-skill pre-credential jobs and may therefore exhibit larger occupational jumps, while older graduates may display shorter, pathway-consistent moves.
-
-Distance is treated as a diagnostic outcome that clarifies the mechanism underlying credential-induced mobility rather than as the primary test of the friction-based reallocation hypothesis.
-
-# Linking Micro and Macro Mechanisms
-
-The aggregate transport framework and the individual-level specificity regressions test complementary implications of a common mechanism: occupational mobility is governed by structured frictions in the reallocation of human capital.
-
-At the aggregate level, the transport model evaluates whether observed occupational flows can be represented as cost-minimizing reallocation subject to fixed origin and destination employment totals. Alternative distance matrices encode competing hypotheses about the structure of these frictions.
-
-At the individual level, educational specificity proxies for the tightness of feasible occupational sets. Highly specific credentials should restrict switching among workers with pre-2016 education, while inter-census education captures a distinct entry-and-sorting process.
-
-Cross-level coherence is assessed by examining whether the distance structure that best rationalizes aggregate flows is also the one most consistent with micro-level gradients. Concretely, if a given distance metric yields aggregate flows that exhibit a clearer exponential decay in bilateral transitions with respect to distance (as reflected in lower cross-entropy and a tighter distance–flow relationship), we expect the micro regressions in the pre-2016 education sample to exhibit steeper declines in switching probability (and, secondarily, in conditional distance moved) as education becomes more specific. Conversely, weak or absent specificity gradients when the aggregate model fits well would weaken the interpretation of the distance metric as capturing behavioral frictions rather than merely statistical regularities.
-
-This cross-level validation disciplines interpretation: the project evaluates not only overall aggregate fit but also whether micro evidence points to the same frictional structure. Alignment requires that the distance metric best explaining aggregate flows also generates the strongest and most consistent specificity gradients at the individual level.
 
 # Anticipated Contributions and Interpretation
 

@@ -3,114 +3,46 @@ format: html
 title: Hostile Seminar Stress Test
 ---
 
-# What Would a Hostile Seminar Audience Attack First?
+# Why should the labour market solve an optimal transport problem?
 
-This document summarizes the five most likely lines of attack in a
-critical academic seminar and the corresponding structural responses.
+Entropy-regularized version is equivalent to decentralized choice with logit mobility frictions. Workers choose among occupations with probabilities that decline with mobility costs. The Sinkhorn solution is simply the equilibrium allocation that respects both origin and destination totals while minimizing total mobility costs.
 
-------------------------------------------------------------------------
+# But the labour market determines the number of workers in each occupation. Why are you treating those as fixed constraints?
 
-## 1. "Isn't This Just Gravity?"
+The objective of the paper is not to model equilibrium occupational employment levels. Instead, we treat the observed occupational growth and decline between censuses as given and ask a conditional question:given these margins, what mobility patterns are consistent with distance-based frictions?
+ 
+# Why do we think either of these distance measures corresponds to actual mobility costs? If both matrices are misspecified, what do we learn from the comparison?
 
-**Attack:**\
-Is this simply a gravity model with exponential distance and fixed
-effects?
+The goal is to evaluate which notion of occupational similarity best rationalizes observed mobility patterns. If neither distance fits well (judged relative to independence baseline), that itself is informative: it tells us that occupational mobility cannot be well explained by either skill similarity or hierarchical proximity.
 
-**Core Issue:**\
-Whether conditioning on marginals adds genuine identification.
+# Education Timing Isn't Exogenous.
 
-**Response:**\
-- Gravity models typically *estimate* origin and destination effects.\
-- This framework *imposes* observed marginals exactly.\
-- Conditioning on origin and destination totals removes size-driven
-variation.\
-- Distance therefore explains only the *composition* of flows
-(substitution), not growth/decline.
-
-------------------------------------------------------------------------
-
-## 2. "Education Timing Isn't Exogenous."
-
-**Attack:**\
-Workers who retrain are selected. Doesn't this invalidate the timing
-partition?
-
-**Core Issue:**\
-Selection versus structural regime separation.
-
-**Response:**\
-- The partition is not interpreted causally.\
+- The partition is not interpreted causally.
 - It isolates a regime where human capital is plausibly fixed (pre-2016
-education).\
+education).
 - The transport framework is applied where the starting location in cost
-space is well-defined.\
+space is well-defined.
 - The inter-census education group serves as a contrasting regime in which the fixed-human-capital assumption does not hold, allowing us to assess whether the transport structure weakens when its underlying premise is violated.
 
-------------------------------------------------------------------------
+# "Calibration Looks Ad Hoc."
 
-## 3. "Calibration Looks Ad Hoc."
-
-**Attack:**\
-Why percentile anchoring? Why not scale differently or estimate
-$\varepsilon$ directly?
-
-**Core Issue:**\
-Whether results depend on tuning.
-
-**Response:**\
-- Only the ratio $C/\varepsilon$ is identified.\
+- Only the ratio $C/\varepsilon$ is identified.
 - Percentile anchoring aligns substitution margins across distance
-metrics.\
-- Results are evaluated across multiple percentile anchors.\
-- Conclusions hopefully do not depend on parameter tuning.
+metrics.
+- Results are evaluated across multiple percentile anchors.
+- Conclusions (hopefully) do not depend on parameter tuning.
 
-------------------------------------------------------------------------
+# "Your Gating Measure Conflates Supply and Demand."
 
-## 4. "Your Gating Measure Conflates Supply and Demand."
-
-**Attack:**\
-Does KL-based gating isolate credential barriers or just historical
-sorting?
-
-**Core Issue:**\
-Interpretation of educational concentration.
-
-**Response:**\
 - The measure captures concentration in educational pipelines.\
 - It may reflect both credential requirements and historical sorting.\
 - It is interpreted as heterogeneity in concentration, not a pure
 regulatory index.
 
-------------------------------------------------------------------------
+# "What Would Falsify This Framework?"
 
-## 5. "What Would Falsify This Framework?"
+-   Flows do not decline exponentially with distance.
+-   Model fit is unstable across $\varepsilon$.
+-   Competing distance metrics perform equivalently poorly.
 
-**Attack:**\
-What empirical result would make you reject the transport
-interpretation?
 
-**Core Issue:**\
-Clarity of the null and falsifiability.
-
-**Response:**\
-The framework would be challenged if:
-
--   Flows do not decline exponentially with distance.\
--   Model fit is unstable across $\varepsilon$.\
--   Competing distance metrics perform equivalently poorly.\
--   Micro-level specificity gradients fail to align with aggregate
-    substitution patterns.
-
-------------------------------------------------------------------------
-
-# Bottom Line
-
-A disciplined seminar response should emphasize:
-
--   Clear identification logic\
--   Transparent calibration\
--   Explicit falsifiability\
--   Distinction between structural interpretation and causal claims
-
-The goal is not to eliminate criticism, but to ensure that structural
-coherence survives it.

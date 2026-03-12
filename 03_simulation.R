@@ -134,7 +134,6 @@ fit_grid <- fit_grid |>
   mutate(
     a = map(P_obs, rowSums),
     b = map(P_obs, colSums),
-
     P_hat = pmap(
       list(a, b, C, Temperature),
       \(a, b, C, temp)
@@ -189,7 +188,7 @@ ggplot(aes(hier, skill))+
   labs(title=paste("Hierarchical and skill distances: Spearman correlation", distance_spearman),
        x="Scaled hierarchical distance",
        y="Scaled skill distance",
-       caption="The maximal hierarchical distance category pools a large number of heterogeneous occupation pairs and is omitted for visual clarity.")+
+       caption="The maximal hierarchical distance category is omitted for visual clarity.")+
   theme_minimal()
 
 #distance plot
@@ -199,7 +198,7 @@ hierskill <- distance_plot(P_fake[["DGP: 100% Hierarchy"]], C_skill, subtitle="D
 hierhier <- distance_plot(P_fake[["DGP: 100% Hierarchy"]], C_hier, subtitle="DGP: Hierarchy | Cost: Hierarchy (matched)")+
   labs(
     x = "Occupational distance (normalized)",
-    y = "Log excess transition probability (relative to independence)"
+    y = "Log excess transition probability"
   )
 skillhier <- distance_plot(P_fake[["DGP: 100% Skill"]], C_hier, subtitle="DGP: Skill | Cost: Hierarchy (mis-match)")+
   theme(axis.title = element_blank())

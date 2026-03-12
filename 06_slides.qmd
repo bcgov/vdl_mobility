@@ -1,6 +1,7 @@
 ---
 format:
   revealjs:
+    self-contained: true
     title-slide: false
     slide-number: true
     theme: simple
@@ -10,6 +11,7 @@ execute:
   echo: false
   warning: false
   message: false
+bibliography: references.bib
 ---
 
 ```{r}
@@ -39,86 +41,99 @@ dest_plt <- noc_specificity|>
 ::: {style="text-align: center;"}
 <br><br>
 
-## Occupational Mobility and Optimal Transport
+## Do Skills or Institutions Shape Occupational Mobility?
+
+#### Simulation results for now — awaiting linked census microdata
 
 <br><br> Richard Martin <br> Ministry of Post Secondary Education and Future Skills\
-<br><br><br><br><br> <small><em>Disclaimer: The views expressed are those of the author and do not necessarily reflect those of the Government of British Columbia.</em></small>
+<br><br><br> <small><em>Disclaimer: The views expressed are those of the author and do not necessarily reflect those of the Government of British Columbia.</em></small>
 :::
 
-## Labour market is constantly evolving
+## Labour markets continually reallocate workers
 
-Some sources of structural change:
+::::: columns
+::: {.column width="50%"}
+- Demand for occupations shifts due to technological change, policy, and shocks
+- Entry and exit absorb part of the adjustment, but some workers must move across occupations
+- Some occupational transitions are harder than others
+:::
 
--   technology
--   COVID19
--   government policy
--   resource depletion
+::: {.column width="50%"}
+![](images/farside.jpg)
+:::
+:::::
 
-These shocks shift labour demand across occupations.
+## How does occupational distance shape mobility?
 
-Adjustment require workers to move across occupations.
+-   Workers tend to move between occupations with similar task requirements[@gathmann2010general]
 
-## Core question
+$$
+P_{ij} \downarrow \text{ as } C_{ij} \uparrow
+$$
 
--   *Which* notion of occupational distance *best* rationalizes *local* mobility?
+where $P_{ij}$ is the probability of moving from occupation $i$ to $j$, and $C_{ij}$ represents the mobility cost implied by occupational distance
 
--   suggesting:
+- We therefore ask:
 
-    1)  I have more than one notion of occupational distance.
-    2)  I have some way of comparing fit.
-    3)  There is more than one type of mobility.
-
-## Where we are going
-
--   Local mobility can be modeled using entropy-regularized optimal transport, which produces flows consistent with observed origin and destination margins.
-
--   This framework allows competing distance metrics to be compared in a clean “horse race.”
-
--   In simulations, when the data-generating process is known, the method recovers the correct distance structure.
-
--   This provides a framework for testing whether skill similarity or hierarchical structure better explains local mobility.
-
-## We propose two distinct mobility regimes:
-
-1)  **Established workers**: Most transitions are local and decline with occupational distance, consistent with gravity-style mobility.
-
--   These are the flows our distance model attempts to explain.
-
-2)  **New credentials**: New education acts like a “wormhole,” enabling non-local jumps that bypass usual occupational distance constraints.
-
--   These flows provide a counterfactual: a distance-based model should struggle to explain them.
-
-## Data requirements
-
--   To study mobility we need repeated observations at the individual level.
--   We are applying for access to the Statistics Canada Virtual Data Lab, which allows linkage of the 2016 and 2021 Census.
--   In the meantime, we simulate mobility data to test the proposed methodology.
-
-## Two Forces Behind Local Mobility
-
-Local occupational mobility reflects two forces:
-
--   Changing labour demand across occupations (push/pull)
-
--   Distance between occupations (friction)
-
-Goal: cleanly separate these two forces.
-
-![Brown, corner pocket](images/newton.jpeg)
+*Which notion of occupational distance best rationalizes local mobility?*
 
 ## What Defines Occupational Distance?
 
 Two natural candidates:
 
-**Skill similarity**
+**Skill similarity**: based on 161 O\*NET dimensions
 
--   based on task and skill content
+**Institutional hierarchy**: based on 5 digit NOC taxonomy
 
-**Institutional hierarchy**
+## Comparing distance metrics
 
--   based on occupational classification structure
+-   We model mobility using entropy-regularized optimal transport.
 
-## Standard Approach: Gravity Models
+-   This allows competing distance matrices to be compared in a clean **horse race**
+
+![.](images/horse.png){width="400px"}
+
+## Two hypothesized mobility regimes
+
+::::: columns
+::: {.column width="40%"}
+-   Local mobility: gradual movement in occupational space
+-   Non-local mobility: jumps that bypass distance frictions, like a "wormhole" in occupation space.
+:::
+::: {.column width="60%"}
+![](images/worm.jpg)
+:::
+:::::
+
+## Data partition
+
+- We partition on whether highest educational attainment changed between 2016 and 2021
+
+    - Unchanged: 2016 occupation is a meaningful origin — distance expected to rationalize observed mobility
+    - Changed: new highest credential breaks the origin-destination link — distance should not rationalize mobility
+
+- The changed-attainment partition serves as a negative control: a model fitting well there would undermine the structural interpretation of fit in the unchanged partition
+
+
+## Local Mobility
+
+-   Gravity-style mobility models predict that flows increase with origin and destination size and decline with distance
+
+-   This mirrors the law of universal gravitation: $F \propto \frac{m_1 m_2}{d^2}$
+
+::::: columns
+::: {.column width="40%"}
+-   Goal: separate the mass effect (occupation size) from the distance effect in order to identify the distance measure that best rationalizes local mobility
+:::
+
+::: {.column width="50%"}
+![](images/newton.jpeg)
+:::
+:::::
+
+## Gravity models
+
+- Commonly used to model migration, commuting, trade...
 
 $$
 P_{ij} = \exp(\alpha_i + \beta_j - \gamma C_{ij})
@@ -128,56 +143,75 @@ $$
 -   $\alpha_i$ origin fixed effect
 -   $\beta_j$ destination fixed effect
 -   $C_{ij}$ occupational distance
--   $\gamma$ object of interest: sensitivity of flows to a proposed cost structure.
+-   $\gamma$ object of interest: sensitivity of flows to a proposed cost structure
 
 ## Gravity Models: An Unfair Horse Race
 
--   In horse racing, handicaps add weight to stronger horses, making the outcome less informative about the horses’ true speed.
+- Gravity models jointly identify the cost sensitivity and fixed effects
 
--   If the friction specification $C_{ij}$ is wrong — and it will be — fixed effects may absorb part of the misspecification.
+-  If cost is misspecified --and it will be-- misspecification partially absorbed by fixed effects 
 
--   We prefer misspecification to appear as lack of fit rather than being masked by parameter adjustment.
+::::: columns
+::: {.column width="40%"}
+-  We prefer misspecification to appear as lack of fit rather than being masked by parameter adjustment
+:::
 
--   The goal of our horse race is to identify which friction structure best rationalizes the observed flows.
+::: {.column width="60%"}
+![](images/handi.png)
+:::
+:::::
 
-## Sinkhorn: A Fair Horse Race
+## Our goal:
 
-The Sinkhorn solution enforces the observed marginals exactly:
+-   to **cleanly identify** how well each friction rationalizes the observed flows
+
+::::: columns
+::: {.column width="50%"}
+-   Of course, winning the horse race does not imply the winner was particularly "fast"
+:::
+
+::: {.column width="50%"}
+![](images/slow.png)
+:::
+:::::
+
+## A Fair Horse Race
+
+Entropy-regularized optimal transport enforces the observed marginals exactly:
 
 $$
 \sum_j P_{ij} = a_i, \qquad
 \sum_i P_{ij} = b_j
 $$
 
-via iterative row and column rescaling.
+-   Equilibrium employment levels are taken as given; we model the mobility flows conditional on those levels.
 
--   Distance measures then compete **only to explain the residual structure of flows**.
--   Sinkhorn implements this idea through an entropy-regularized optimal transport problem.
+-   Equivalent to a multinomial logit random utility model with mobility costs and idiosyncratic Gumbel shocks.
 
-## Sinkhorn Optimization {.smaller}
+## Entropy-regularized optimal transport {.smaller}
 
 $$
 \mathcal{L}
 =
-\sum_{ij} C_{ij} P_{ij}
+\underbrace{\sum_{ij} P_{ij} C_{ij}}_{\text{mass}\times\text{distance}}
 +
-\varepsilon
-\underbrace{\sum_{ij} P_{ij}(\log P_{ij}-1)}_{\text{negative entropy $-$ constant}}
+\varepsilon\times
+\underbrace{\sum_{ij} P_{ij}(\log P_{ij}-1)}_{\text{negative entropy}}
 +
-\sum_i f_i \left(a_i - \sum_j P_{ij}\right)
+\sum_i f_i \underbrace{\left(a_i - \sum_j P_{ij}\right)}_{\text{origin constraint}}
 +
-\sum_j g_j \left(b_j - \sum_i P_{ij}\right).
+\sum_j g_j \underbrace{\left(b_j - \sum_i P_{ij}\right)}_{\text{destination constraint}}
 $$
 
-Taking the derivative with respect to $P_{ij}$ yields the first-order condition
+First-order conditions:
 
 $$
 \frac{\partial \mathcal{L}}{\partial P_{ij}}
 =
-C_{ij} + \varepsilon \log P_{ij} - f_i - g_j = 0.
+C_{ij} + \varepsilon \log P_{ij} - f_i - g_j = 0
 $$
 
-Solving for $P_{ij}$ gives
+Rearranging:
 
 $$
 \log P_{ij}
@@ -186,12 +220,12 @@ $$
 +
 \frac{g_j}{\varepsilon}
 -
-\frac{C_{ij}}{\varepsilon}.
+\frac{C_{ij}}{\varepsilon}
 $$
 
-## Structure of the Solution
+## Structure of the Solution {.smaller}
 
-Exponentiating both sides,
+Exponentiating:
 
 $$
 P_{ij}
@@ -199,51 +233,55 @@ P_{ij}
 u_i\, e^{-C_{ij}/\varepsilon}\, v_j,
 $$
 
--   Thus the optimal solution must be a row- and column-rescaling of the kernel $e^{-C_{ij}/\varepsilon}$.
--   Given $v$, there is a unique $u$ that fixes the rows.
--   Given $u$, there is a unique $v$ that fixes the columns.
--   Sinkhorn alternates these corrections until both margins are satisfied.
--   Implemented using a custom log-domain Sinkhorn solver in R ([safesink](https://github.com/bcgov/safesink)) to ensure numerical stability and dimensional alignment.
+-   Thus the optimal solution must be a row- and column-rescaling of the kernel $e^{-C_{ij}/\varepsilon}$
+-   Given $v$, there is a unique $u$ that fixes the rows
+-   Given $u$, there is a unique $v$ that fixes the columns
+-   Sinkhorn alternates these corrections until both margins are satisfied
+-   Implemented using a benchmark-tested log-domain Sinkhorn solver that ensures numerical stability and dimensional alignment
+
+[![.](images/logo.png){width="400px"}](https://github.com/bcgov/safesink)
 
 ## Result
 
--   Because the objective is strictly convex, the optimal solution $P^{\star}$ is unique.
+-   Because the objective is strictly convex, the optimal solution $P^{\star}$ is unique
 
--   If the Sinkhorn algorithm converges, it must converge to $P^{\star}$.
+-   If the Sinkhorn algorithm converges, it must converge to $P^{\star}$
 
-$P^{\star}$
+The optimal solution:
 
 -   matches the observed origin and destination totals
--   respects the relative friction structure implied by $C_{ij}$.
+-   respects the relative friction structure implied by $C_{ij}$
 
 ## Same structure as gravity, but... {background-image="images/hammer.jpg" background-size="cover" background-opacity="0.5"}
 
-Gravity **estimates** margins and frictions jointly.
+Gravity estimates margins and frictions jointly
 
-Sinkhorn **conditions on the margins**, so frictions are identified from the residual structure of flows.
+Sinkhorn conditions on the margins, so frictions are identified from the residual structure of flows
 
--   If we knew **the** true cost matrix, a gravity model would be a natural way to estimate the magnitude of the friction effects.
+-   With a misspecified cost matrix, gravity simply estimates sensitivity to the wrong notion of distance
 
--   If the true cost structure is unknown and the goal is a fair comparison across candidate cost matrices, Sinkhorn allows for cleaner identification: the right tool for the job.
+-   When the goal is to compare alternative cost matrices, conditioning on the margins allows cleaner identification of frictions
+
+Sinkhorn is the right tool for this job
 
 ## Interpretation of Temperature: $\varepsilon$
 
-$\varepsilon$ is the scale of random utility shocks (Gumbel noise) affecting mobility choices.
+-   $\varepsilon$ is the scale of Gumbel utility shocks affecting mobility choices
+
+-   The temperature parameter governs how much mobility reflects cost minimization versus randomness
 
 Low $\varepsilon$
 
-- Mobility concentrates on the lowest-cost transitions
-- Behavior approaches cost-minimizing reallocation (social planner)
+-   Behavior approaches cost-minimizing reallocation (social planner)
 
 High $\varepsilon$
 
-- Random shocks dominate cost differences
-- Mobility becomes diffuse and approaches random choice $P_{ij} = a_i b_j$
+-   Mobility becomes diffuse and approaches random choice $P_{ij} = a_i b_j$
 
 ## The distance metrics
 
 -   Skill distance: represents continuous skill transferability
--   Hierarchical distance: represents discrete barriers within labour market.
+-   Hierarchical distance: represents discrete barriers within labour market
 
 ## Skill distance: Based on 161 O\*NET measures
 
@@ -291,7 +329,7 @@ skills_heat |> plotly::layout(
 :::
 :::::
 
-## Hierarchical distance: based on 5 digit NOC tree {.smaller}
+## Hierarchical distance: derived from NOC taxonomy {.smaller}
 
 ::::: columns
 ::: {.column width="30%"}
@@ -348,7 +386,7 @@ hier_dist_heat |>
 ## Skill and Hierarchical distances: similar but distinct
 
 ```{r}
-plots$dist_relationship
+plots$dist_relationship+theme(text=element_text(size=17))
 ```
 
 ## Simulation Design
@@ -365,16 +403,16 @@ $$
 \varepsilon = 1
 $$
 
-Then fit mis-specified models using
+Then estimate models using:
 
--   skill only
--   hierarchy only
+-   $C_{skill}$
+-   $C_{hier}$
 
 ## Evaluating the Horse Race
 
--   We evaluate model fit using the Kullback–Leibler divergence between the observed transition matrix $P$ and the predicted matrix $\hat P$.
+-   We evaluate model fit using the Kullback–Leibler divergence between the observed transition matrix $P$ and the predicted matrix $\hat P$
 
--   In our simulations $P$ is the true transition matrix, so KL measures the divergence between the fitted model and the truth.
+-   In our simulations $P$ is the true transition matrix, so KL measures the divergence between the estimated model and the truth
 
 $$
 KL(P \parallel \hat P)
@@ -385,31 +423,65 @@ $$
 -   KL divergence measures the **log-likelihood loss** of the model
 -   **Lower values indicate better fit**
 
-## Which Distance Metric Fits the Data?
+## Which distance metric best rationalizes the data? {.smaller}
 
 ::::: columns
-::: {.column width="55%"}
--   $\varepsilon \neq 1$ introduces mild misspecification: $KL > 0$.
--   When the DGP is pure, the matching distance metric is the clear winner.
--   When flows are independent, forcing distance to matter (low $\varepsilon$) increases the loss.
--   When the DGP is 50/50 the race is tied, but the U-shape shows that wrong distance still contains useful information.
+::: {.column width="30%"}
+- We evaluate fit over a range of temperatures as a robustness check: $\varepsilon \in  [0.5, 2], \varepsilon\neq1$.
+- When the DGP matches the distance metric, that metric clearly dominates.
+- When flows are independent, forcing distance to matter increases loss.
+- When both structures are present, the race tightens.
 :::
 
-::: {.column width="45%"}
+::: {.column width="70%"}
 ```{r}
-#| fig-height: 10
+#| fig-height: 7
  plots$kl_plots+
-   theme(text=element_text(size=16))
+   theme(text=element_text(size=17.5), legend.position = "bottom")
 ```
 :::
 :::::
 
-## Destination Education Gating
+## Diagnostic Plots
 
-Some occupations draw from **very specific educational pipelines**, while others recruit from a broad mix of credentials.
+::::: columns
+::: {.column width="30%"}
+- If distance rationalizes mobility, log excess mobility will decline linearly with distance.
+
+- If the distance metric is mis-specified, it will not.
+:::
+
+::: {.column width="70%"}
+```{r, cache=TRUE}
+#| fig-height: 7
+plots$linearity&
+  theme(text = element_text(size = 14))
+```
+:::
+:::::
+
+
+
+## Is the labour market segmented?
+
+-   Do different distance metrics explain mobility in different parts of the labour market?
+
+-   One might hypothesize:
+
+    -   hierarchical distance better rationalizes mobility into highly gated occupations
+
+    -   skill distance better rationalizes mobility into less gated occupations
+
+-   We split the data according to the concentration of educational pipelines into each occupation.
+
+-   Education gating serves as a proxy for the tightness of occupational entry pathways.
+
+## Destination education gating:
+
+Some occupations draw from **very specific educational pipelines**, while others recruit from a broad mix of credentials
 
 1.  Calculate overall workforce education distribution $p_0$
-2.  Measure KL divergence of each occupation's education distribution $p$.
+2.  Measure KL divergence of each occupation's education distribution $p$
 
 $$
 KL(p \parallel p_0)
@@ -421,87 +493,80 @@ $$
 \text{specificity} = \log(KL) - \widehat{E}[\log(KL) \mid \log(T)]
 $$
 
-## Destination Gating
+## Policy implication {.smaller}
 
 ::::: columns
-::: {.column width="40%"}
-Why?
+::: {.column width="35%"}
+-   Labour shortages in different segments require different adjustment mechanisms
 
--   Run the cost-matrix “horse race” within each quartile.
--   Hypothesis: **hierarchical distance** fits better for **high-gating** destinations, while **skill distance** fits better for **low-gating** destinations.
+    -   High gating: adjustment depends on expanding formal training pipelines
+
+    -   Low gating: reskilling and short-cycle training can accelerate adjustment
+
+-   Shortages in highly gated occupations cannot be resolved quickly through reskilling alone
 :::
 
-::: {.column width="60%"}
+::: {.column width="65%"}
 ```{r}
-p <- ggplotly(dest_plt, width=660,
-  height=495)
+dest_plt <- dest_plt+
+  theme(text=element_text(size=17.5))
+p <- ggplotly(dest_plt, width=800,
+  height=600)
 p$x$data <- rev(p$x$data)
 p
 ```
 :::
 :::::
 
-## Heterogeneity in Distance Structure
+## Heterogeneity in Distance Structure {.smaller}
 
 ::::: columns
-::: {.column width="50%"}
--   Recall when distance was 50/50 for the entire market the result was a tie.
--   But the aggregate market may hide **heterogeneous regimes**, that would be invisible if we measured fit globally.
--   If we measure fit **within segments**, we can potentially identify local distance structures.
+::: {.column width="30%"}
+-   To the right we see the result of splitting the labour market into destination gating quartiles
+-   Treating the labour market as a whole would hide this structure
+-   We could also split on the basis of destination TEER, as hierarchical distance may overstate cross-group frictions for TEERs 0 & 5
 :::
 
-::: {.column width="50%"}
+::: {.column width="70%"}
 ```{r}
-#| fig-height: 10
+#| fig-height: 7
  plots$dest_gate_kl_plot+
-   theme(text=element_text(size=16))
+   theme(text=element_text(size=17.5))
 ```
 :::
 :::::
 
-## Does Occupational Distance Rationalize Mobility?
+## Individual analysis: the *attainment increase* group {.smaller}
 
-```{r}
- plots$linearity&
-   theme(text = element_text(size = 7))
-```
+-   Regress distance traveled on size-corrected KL divergence measures from the CIP–NOC table
 
-## The inter-census group
+    -   **Education specificity**\
+        → How concentrated are graduates from a program across occupations\
+        → Interpreted as likelihood the program acts as a **wormhole entrance**
 
--   For workers whose most recent credential occurs between 2016 and 2021, the 2016 occupation is less informative about their starting position in skill/hierarchy space.
+    -   **Destination gating**\
+        → How concentrated are entrants to an occupation across programs\
+        → Interpreted as likelihood the occupation acts as a **wormhole exit**
 
--   Example: Server in 2016 → graduate medical school in 2019 → physician in 2021.
+-   Controls: 2-digit NOC origin fixed effects (2016 occupation)\
+    → Origin occupation may influence both education choice and distance traveled
 
--   Large jumps in skill or hierarchy space should therefore be more common in this group.
+**Hypothesis**
 
--   These jumps likely reflect credential-enabled entry, not frictional mobility.
-
--   Implication: distance-based mobility models should perform poorly for this group.
-
-## Individual analysis of the inter-census group
-
--   Regress distance traveled between 2016 and 2021 occupations on size-corrected KL divergence measures derived from the CIP–NOC table:
-
--   Education specificity (NOC concentration)
-
--   Destination gating (Education concentration)
-
--   Control using 2 digit NOC in 2016 fixed effects (potential backdoor)
-
--   Hypothesis
-
-    -   More specific programs and more gated occupations should generate larger occupational jumps.
+-   More specific programs and more gated occupations should generate larger occupational jumps
 
 ## What we will do (once the linked data are available)
 
 1)  Race two distance metrics on two samples:
 
-    -   one where distance should rationalize local mobility (pre-2016 attainment)
+    -   one where distance should rationalize local mobility (highest educational attainment constant)
 
-    -   one where it should not (inter-census attainment)
+    -   one where it should not (highest educational attainment changed)
 
 2)  Test for heterogeneity in mobility frictions across the labour market:
 
-    -   split sample by measure of destination gating and race the two metrics on each split.
+    -   split sample by measure of destination gating and race the two metrics on each split
 
-3)  Characterize the relationship between distance traveled and education/destination specificity among the inter-census attainment group
+3)  Characterize the relationship between distance traveled and education/destination specificity among the *attainment increase* group
+
+## References
