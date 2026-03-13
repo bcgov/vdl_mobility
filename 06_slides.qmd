@@ -123,7 +123,7 @@ Two natural candidates:
 
 ::::: columns
 ::: {.column width="40%"}
--   Goal: separate the mass effect (occupation size) from the distance effect in order to identify the distance measure that best rationalizes local mobility
+- Objective: separate the mass effect (occupation size) from the distance effect in order to identify which distance measure best rationalizes local mobility
 :::
 
 ::: {.column width="50%"}
@@ -142,51 +142,49 @@ $$
 -   $P_{ij}$ is the share of workers moving from occupation $i$ to $j$
 -   $\alpha_i$ origin fixed effect
 -   $\beta_j$ destination fixed effect
--   $C_{ij}$ occupational distance
--   $\gamma$ object of interest: sensitivity of flows to a proposed cost structure
+-   $C_{ij}$ proxy for the true mobility cost
+-   $\gamma$ sensitivity of flows to proxy 
 
 ## Gravity Models: An Unfair Horse Race
 
-- Gravity models jointly identify the cost sensitivity and fixed effects
-
--  If cost is misspecified --and it will be-- misspecification partially absorbed by fixed effects 
+- Gravity models jointly estimate cost sensitivity and fixed effects
+- If the cost proxy $C_{ij}$ is misspecified — and it inevitably is — part of the misspecification is absorbed by the fixed effects
 
 ::::: columns
 ::: {.column width="40%"}
+
+- This allows a poorly specified cost matrix to appear to fit the data well
 -  We prefer misspecification to appear as lack of fit rather than being masked by parameter adjustment
+
 :::
 
 ::: {.column width="60%"}
+
 ![](images/handi.png)
-:::
-:::::
-
-## Our goal:
-
--   to **cleanly identify** how well each friction rationalizes the observed flows
-
-::::: columns
-::: {.column width="50%"}
--   Of course, winning the horse race does not imply the winner was particularly "fast"
-:::
-
-::: {.column width="50%"}
-![](images/slow.png)
 :::
 :::::
 
 ## A Fair Horse Race
 
-Entropy-regularized optimal transport enforces the observed marginals exactly:
+Entropy-regularized optimal transport imposes the observed origin and destination totals exactly
 
 $$
 \sum_j P_{ij} = a_i, \qquad
 \sum_i P_{ij} = b_j
 $$
 
--   Equilibrium employment levels are taken as given; we model the mobility flows conditional on those levels.
+- The model therefore cannot adjust fixed effects to compensate for cost misspecification
 
--   Equivalent to a multinomial logit random utility model with mobility costs and idiosyncratic Gumbel shocks.
+- Equilibrium employment levels are taken as given; we model mobility flows conditional on those levels.
+
+- Equivalent to a multinomial logit random utility model with mobility costs and idiosyncratic Gumbel shocks.
+
+## Our goal:
+
+- cleanly identify how well each friction rationalizes the observed **flows**
+- most workers remain in the same occupation over a five-year period
+- even a crude switching-cost model (0 on the diagonal, +c elsewhere) will vastly outperform independence, which predicts flows as the outer product of the marginals
+- our interest is explaining **where workers go when they move**, not simply **whether they move**
 
 ## Entropy-regularized optimal transport {.smaller}
 
@@ -423,7 +421,7 @@ $$
 -   KL divergence measures the **log-likelihood loss** of the model
 -   **Lower values indicate better fit**
 
-## Which distance metric best rationalizes the data? {.smaller}
+## Simulation: Can the method recover the true distance structure? {.smaller}
 
 ::::: columns
 ::: {.column width="30%"}
