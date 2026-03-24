@@ -1,0 +1,211 @@
+---
+format:
+  pdf:
+    self-contained: true
+    number-sections: true
+bibliography: references.bib    
+---
+
+# Project title
+
+**Do Skills or Institutions Shape Occupational Mobility?**
+
+# Project description, rationale, and objectives
+
+## Background and motivation
+
+Labour markets must continually reallocate workers across occupations in response to technological change, policy, and economic shocks. While entry and exit account for part of this adjustment, a substantial share occurs through **occupational mobility** among existing workers.
+
+A large empirical literature models labour market dynamics using task- and skill-based frameworks, in which occupations are characterized by their underlying skill requirements @autor2013task @acemoglu2011skills. In these models, workers accumulate human capital that is partially transferable across occupations, implying that mobility is more likely between occupations with similar skill profiles @yamaguchi2012task.
+
+Empirical work operationalizes this idea using measures of occupational distance derived from task content or skill similarity @gathmann2010general. These approaches embed occupations in a continuous skill space and implicitly assume that mobility is local within that space.
+
+At the same time, a parallel literature emphasizes the role of institutions and occupational structure in shaping mobility @weeden2002. Credential requirements, licensing, and occupational classifications can constrain entry into certain occupations, independent of skill similarity.
+
+Despite this, most empirical analyses adopt a single notion of distance—typically skill-based—and do not directly evaluate whether it provides an adequate representation of mobility frictions.
+
+## Knowledge gap
+
+Two key gaps emerge from the existing literature.
+
+First, there is limited evidence on **which notion of occupational distance best explains observed mobility patterns**. Standard empirical approaches—such as gravity-style models @anderson_vanwincoop_2003—jointly estimate origin effects, destination effects, and  distance sensitivity. In these models, misspecification of the distance measure can be absorbed by other parameters, making it difficult to assess whether the chosen distance metric accurately captures mobility frictions. As a result, existing estimates do not provide a clean comparison of competing distance measures.
+
+Second, most analyses implicitly assume that mobility operates under a single, homogeneous mechanism across the labour market. However, occupations differ substantially in the extent to which entry is constrained by formal educational pathways or credentials.
+
+Some occupations draw from narrow, well-defined educational pipelines and require specific degrees, certifications, or licensing. Others recruit from diverse educational backgrounds and allow more flexible entry pathways.
+
+This suggests that the relevance of different distance measures may vary systematically across occupations.
+
+In particular:
+
+-   Skill-based distance may better explain mobility where skills are transferable and entry barriers are low
+-   Hierarchical or institutional distance may better explain mobility where entry is tightly regulated or structured
+
+## Policy relevance
+
+Understanding the structure of occupational mobility is directly relevant to labour market policy.
+
+Many policy interventions—such as training programs, reskilling initiatives, and workforce planning—implicitly assume that workers can transition between occupations based on skill similarity. However, if mobility is constrained by institutional factors such as credentialing requirements or tightly defined educational pathways, these assumptions may not hold.
+
+This distinction has important implications:
+
+-   In occupations with open entry pathways, targeted training and short-cycle reskilling programs may facilitate rapid adjustment
+-   In occupations with tight entry pathways, adjustment may depend on longer-term investments in formal education and credentialing systems
+
+Mischaracterizing the nature of mobility frictions may therefore lead to ineffective or misaligned policy responses.
+
+By identifying which notion of occupational distance best explains observed mobility—and how this varies across the labour market—this project provides evidence to support more effective workforce development and labour market adjustment strategies.
+
+## Objectives
+
+This project addresses these gaps by evaluating competing measures of occupational distance within a unified framework.
+
+The primary research questions are:
+
+1.  Which notion of occupational distance best rationalizes observed occupational mobility in Canada?
+2.  Does the explanatory power of different distance measures vary across segments of the labour market?
+3.  To what extent does occupational mobility reflect local reallocation in skill space versus non-local transitions associated with new credentials?
+
+To address these questions, the project will:
+
+-   Construct transition matrices of occupational mobility using Census 2016-2021 Longitudinal File (CEN_2016_2021)
+-   Develop two alternative distance measures:
+    -   a skill-based distance derived from O\*NET descriptors
+    -   a hierarchical distance based on the NOC classification
+-   Evaluate how well each distance measure explains observed mobility patterns using an entropy-regularized optimal transport framework
+-   Examine heterogeneity by segmenting the labour market according to the concentration of educational pathways into occupations
+
+# Data requirements
+
+## Justification for using microdata
+
+The analysis requires individual-level transitions between occupations over time, which cannot be obtained from:
+
+-   Public Use Microdata Files (PUMFs)
+-   Custom tabulations
+-   Remote access systems
+
+The project relies on Census 2016-2021 Longitudinal File (CEN_2016_2021), which allow observation of individuals’ occupations at two points in time. This is essential to construct the origin–destination transition matrix and analyze mobility patterns.
+
+## Dataset(s) required
+
+-   Census 2016-2021 Longitudinal File (CEN_2016_2021)  
+
+### Sample description
+
+-   Unit of analysis: individual workers
+-   Population of interest: individuals observed in both the 2016 and 2021 Censuses who report in both periods:
+    - a valid occupation (as a NOC 2021 code in both periods)
+    - highest educational attainment
+ 
+
+### Geography
+
+-   National
+
+### Variable list
+
+Variables expected to be used include:
+
+-   Occupation (ideally as a NOC 2021 code in both periods)
+-   Highest level of educational attainment
+-   Field of study (CIP, where available)
+-   Class of Worker (where available)
+-   Survey weights.
+
+Derived variables will include:
+
+-   Indicators of occupational transitions between 2016 and 2021, constructed from origin–destination occupation pairs at the individual level
+-   Aggregated transition matrices and associated origin and destination marginals, constructed using survey weights
+-   Measures of educational concentration by occupation, derived from NOC–education distributions (e.g., based on published cross-tabulations)
+-   Occupational distance matrices, including both skill-based measures constructed from publicly available O\*NET data and hierarchical measures based on the NOC classification
+
+## Will datasets be merged or pooled together?
+
+No direct merging of microdata files is required.
+
+# Methodology
+
+## Sample size and confidentiality
+
+The Census 2016-2021 Longitudinal File (CEN_2016_2021) provides a large sample size and the number of observations is expected to be sufficient to:
+
+-   Construct reliable transition matrices at detailed occupational levels
+-   Support statistically reliable analysis of occupational mobility patterns
+
+All outputs will comply with Statistics Canada confidentiality requirements. Results will be released only in non-disclosive form, with appropriate aggregation or suppression applied where necessary.
+
+## Modelling
+
+The analysis uses entropy-regularized optimal transport to model occupational mobility.
+
+The method:
+
+-   Takes observed origin and destination totals as given\
+-   Computes a transition matrix that minimizes mobility costs subject to these constraints\
+-   Uses a distance matrix to represent the cost of moving betweenen occupations
+
+The optimization problem is solved using a standard numerical procedure (Sinkhorn iteration).
+
+Two alternative distance specifications will be evaluated:
+
+-   A model based on skill similarity\
+-   A model based on hierarchical proximity within the NOC classification
+
+As a baseline, a simple switching-cost specification will also be considered, with zero cost for remaining in the same occupation and a constant positive cost for all occupational changes. This baseline captures the overall tendency to remain in the same occupation but does not impose structure on transitions across occupations.
+
+Model performance will be assessed by comparing how well each specification reproduces the observed transition matrix.
+
+The approach does not involve training or tuning a predictive model and does not use machine learning techniques.
+
+## Descriptive statistics
+
+Descriptive statistics will summarize the distribution of workers across occupations and key features of occupational mobility, including switching rates, the largest origin–destination flows, and selected summaries of transition patterns. Given the high dimensionality of the full transition matrix, results will focus on salient features (e.g., top transitions and aggregated patterns) rather than exhaustive tabulation. Where possible, publicly available tables will be used to contextualize results. Statistics produced within the RDC will be limited to those required to support the analysis.
+
+# External Data
+
+The analysis will incorporate publicly available [O\*NET](https://www.onetcenter.org/database.html#individual-files) data to construct measures of occupational similarity. These data provide descriptors of skills, knowledge, abilities, and work activities, which will be mapped to Canadian occupations using established crosswalks.
+
+In addition, the public [Occupation by major field of study (detailed, 4-digit): Canada, provinces and territories](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810040401) table will be used to construct measures of education specificity and destination gating.
+
+No confidential external data will be used. Public data sources are used solely to construct derived measures and will not be linked at the individual level to the microdata.
+
+# Software requirements
+
+The analysis will be conducted using:
+
+-   R
+
+Packages expected to be used include:
+
+-   data manipulation and analysis tools: [tidyverse](https://tidyverse.org/)
+-   numerical computation tools: [safesink](https://github.com/bcgov/safesink)
+
+No specialized or non-standard software requiring additional approval is expected.
+
+# Expected output
+
+The project is expected to produce:
+
+-   a conference presentation
+-   a peer-reviewed academic journal article
+-   a government report
+
+The results may also inform internal policy analysis related to labour market adjustment and workforce development.
+
+# Expected start date and duration of the project
+
+-   Start date: ASAP
+-   Duration: Approximately 6–12 months
+
+# Source(s) of funding for this project
+
+-   Government of British Columbia
+
+# Location of Work
+
+-   Government of British Columbia vDL
+
+# References
+
+

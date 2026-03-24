@@ -43,7 +43,7 @@ dest_plt <- noc_specificity|>
 
 ## Do Skills or Institutions Shape Occupational Mobility?
 
-#### Simulation results for now — awaiting linked census microdata
+#### Methodology and simulation results; empirical application forthcoming
 
 <br><br> Richard Martin <br> Ministry of Post Secondary Education and Future Skills\
 <br><br><br> <small><em>Disclaimer: The views expressed are those of the author and do not necessarily reflect those of the Government of British Columbia.</em></small>
@@ -75,15 +75,20 @@ where $P_{ij}$ is the probability of moving from occupation $i$ to $j$, and $C_{
 
 - We therefore ask:
 
-*Which notion of occupational distance best rationalizes local mobility?*
+> Which notion of occupational distance best rationalizes local mobility?
 
 ## What Defines Occupational Distance?
 
-Two natural candidates:
+Three candidates:
 
-**Skill similarity**: based on 161 O\*NET dimensions
+- **Skill similarity**  
+  Distance based on O*NET measures of skills, abilities, knowledge, and work activities  
 
-**Institutional hierarchy**: based on 5 digit NOC taxonomy
+- **Institutional hierarchy**  
+  Distance based on the 5-digit NOC hierarchy  
+
+- **Binary switching cost**  
+  A simple null: 0 on the diagonal, +c otherwise
 
 ## Comparing distance metrics
 
@@ -101,19 +106,36 @@ Two natural candidates:
 -   Non-local mobility: jumps that bypass distance frictions, like a "wormhole" in occupation space.
 :::
 ::: {.column width="60%"}
-![](images/worm.jpg)
+![](images/wormhole.webp)
 :::
 :::::
 
-## Data partition
+## Data and identification
+- Linked 2016–2021 Census sample with observed occupation and education
+- Sample is not representative due to non-response and probabilistic linkage
 
-- We partition on whether highest educational attainment changed between 2016 and 2021
+- This matters for estimating mobility levels, but not for our question:
 
-    - Unchanged: 2016 occupation is a meaningful origin — distance expected to rationalize observed mobility
-    - Changed: new highest credential breaks the origin-destination link — distance should not rationalize mobility
+> Which notion of occupational distance best rationalizes observed transitions?
 
-- The changed-attainment partition serves as a negative control: a model fitting well there would undermine the structural interpretation of fit in the unchanged partition
+- Selection affects composition, but only matters for us if it systematically favors one distance metric
 
+## Data partition: local, non-local, mismeasured {.smaller}
+Local:
+
+- No new highest educational attainment
+- CoW = employee both periods
+- 2016 TEER commensurate with highest attainment $\pm1$
+
+Non-local:
+
+- New highest educational attainment
+- CoW = employee both periods
+- 2016 TEER commensurate with highest attainment $\pm1$
+
+Mismeasured:
+
+- All others — self-employed either period, TEER-incommensurate, or both
 
 ## Local Mobility
 
@@ -178,13 +200,6 @@ $$
 - Equilibrium employment levels are taken as given; we model mobility flows conditional on those levels.
 
 - Equivalent to a multinomial logit random utility model with mobility costs and idiosyncratic Gumbel shocks.
-
-## Our goal:
-
-- cleanly identify how well each friction rationalizes the observed **flows**
-- most workers remain in the same occupation over a five-year period
-- even a crude switching-cost model (0 on the diagonal, +c elsewhere) will vastly outperform independence, which predicts flows as the outer product of the marginals
-- our interest is explaining **where workers go when they move**, not simply **whether they move**
 
 ## Entropy-regularized optimal transport {.smaller}
 
@@ -276,10 +291,6 @@ High $\varepsilon$
 
 -   Mobility becomes diffuse and approaches random choice $P_{ij} = a_i b_j$
 
-## The distance metrics
-
--   Skill distance: represents continuous skill transferability
--   Hierarchical distance: represents discrete barriers within labour market
 
 ## Skill distance: Based on 161 O\*NET measures
 
@@ -410,16 +421,16 @@ Then estimate models using:
 
 -   We evaluate model fit using the Kullback–Leibler divergence between the observed transition matrix $P$ and the predicted matrix $\hat P$
 
--   In our simulations $P$ is the true transition matrix, so KL measures the divergence between the estimated model and the truth
-
 $$
 KL(P \parallel \hat P)
 =
 \sum_{ij} P_{ij}\log\frac{P_{ij}}{\hat P_{ij}}
 $$
 
--   KL divergence measures the **log-likelihood loss** of the model
--   **Lower values indicate better fit**
+-   KL divergence measures 
+    - the **log-likelihood loss** of the model
+    - how well the model puts probability mass where the data actually are.
+
 
 ## Simulation: Can the method recover the true distance structure? {.smaller}
 
@@ -522,7 +533,7 @@ p
 ::: {.column width="30%"}
 -   To the right we see the result of splitting the labour market into destination gating quartiles
 -   Treating the labour market as a whole would hide this structure
--   We could also split on the basis of destination TEER, as hierarchical distance may overstate cross-group frictions for TEERs 0 & 5
+-   We will also split on the basis of destination TEER, as hierarchical distance may overstate cross-group frictions for TEERs 0 & 5
 :::
 
 ::: {.column width="70%"}
@@ -546,25 +557,27 @@ p
         → How concentrated are entrants to an occupation across programs\
         → Interpreted as likelihood the occupation acts as a **wormhole exit**
 
--   Controls: 2-digit NOC origin fixed effects (2016 occupation)\
-    → Origin occupation may influence both education choice and distance traveled
+-   Controls: 2-digit NOC origin fixed effects (2016 occupation)
+
+    →  Origin occupation may influence both education choice and distance traveled.
+    
+    →  As a by-product, they also absorb any average differences in linkability across origin occupations.
 
 **Hypothesis**
 
 -   More specific programs and more gated occupations should generate larger occupational jumps
 
-## What we will do (once the linked data are available)
+## Conclusion
 
-1)  Race two distance metrics on two samples:
+- Mobility is heterogeneous (local vs non-local)
+- No single distance metric explains all transitions
+- The labour market is segmented by entry constraints
 
-    -   one where distance should rationalize local mobility (highest educational attainment constant)
+- Implication:
 
-    -   one where it should not (highest educational attainment changed)
+    - Some shortages require training pipelines
+    - Others can be addressed through reskilling
 
-2)  Test for heterogeneity in mobility frictions across the labour market:
-
-    -   split sample by measure of destination gating and race the two metrics on each split
-
-3)  Characterize the relationship between distance traveled and education/destination specificity among the *attainment increase* group
+- Effective policy depends on understanding where workers can actually move.
 
 ## References

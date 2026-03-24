@@ -13,7 +13,7 @@ The objective of the paper is not to model equilibrium occupational employment l
  
 # Why do we think either of these distance measures corresponds to actual mobility costs? If both matrices are misspecified, what do we learn from the comparison?
 
-The goal is to evaluate which notion of occupational similarity best rationalizes observed mobility patterns. If neither distance fits well (judged relative to independence baseline), that itself is informative: it tells us that occupational mobility cannot be well explained by either skill similarity or hierarchical proximity.
+The goal is to evaluate which notion of occupational similarity best rationalizes observed mobility patterns. If neither distance fits well (judged relative to naive baseline), that itself is informative: it tells us that occupational mobility cannot be well explained by either skill similarity or hierarchical proximity.
 
 # Education Timing Isn't Exogenous.
 
