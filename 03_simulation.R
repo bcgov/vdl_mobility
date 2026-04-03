@@ -221,11 +221,17 @@ hier_long <- C_hier|>
   rownames_to_column("origin")|>
   pivot_longer(-origin, names_to = "destination", values_to = "distance")
 
+#create null (binary) distance----------------------
 
-base_quartiles <- noc_specificity |>
-  select(noc, gating_quartile, hier_weight) |>
-  group_by(gating_quartile, hier_weight) |>
-  nest() |>
+null_long <- crossing(origin=skills$nocs_we_want$noc_plus_title,
+                      destination=skills$nocs_we_want$noc_plus_title)|>
+  mutate(distance=if_else(origin==destination, 0, 1))
+
+
+base_tertiles <- noc_specificity |>
+  select(noc, gating) |>
+  group_by(gating) |>
+  nest()|>
   mutate(skill = map(data, \(d)
                 skill_long |>
                   semi_join(d, by = c("destination" = "noc")) |>
@@ -238,33 +244,49 @@ base_quartiles <- noc_specificity |>
                  pivot_wider(names_from = destination, values_from = distance) |>
                  column_to_rownames("origin") |>
                  as.matrix()),
-         C = pmap(list(skill, hier, hier_weight), weighted_cost),
+         null = map(data, \(d)
+                    null_long |>
+                      semi_join(d, by = c("destination" = "noc")) |>
+                      pivot_wider(names_from = destination, values_from = distance) |>
+                      column_to_rownames("origin") |>
+                      as.matrix()),
+         C = case_when(gating=="Low"~ skill,
+                       gating=="Medium" ~ hier,
+                       gating=="High" ~ null
+                       ),
          a = list(a_old),
          b = map(data, \(d) b_old[d$noc]),
          skill_fit = pmap(list(a, b, skill), \(a, b, C) sinkhorn_aligned(a, b, C, epsilon = 1, solver = sinkhorn_log)$plan),
-         hier_fit = pmap(list(a, b, hier), \(a, b, C) sinkhorn_aligned(a, b, C, epsilon = 1, solver = sinkhorn_log)$plan)
+         hier_fit = pmap(list(a, b, hier), \(a, b, C) sinkhorn_aligned(a, b, C, epsilon = 1, solver = sinkhorn_log)$plan),
+         null_fit = pmap(list(a, b, null), \(a, b, C) sinkhorn_aligned(a, b, C, epsilon = 1, solver = sinkhorn_log)$plan)
          )
 
-by_quartiles <- base_quartiles |>
+by_tertiles <- base_tertiles |>
   crossing(tibble(Temperature = 2^seq(-1,1,.1)[-11])) |>
   mutate(simulated = pmap(list(a, b, C, Temperature),\(a, b, C, T) sinkhorn_aligned(a, b, C, epsilon = T, solver = sinkhorn_log)$plan),
          kl_skill = map2_dbl(simulated, skill_fit, kl_score),
-         kl_hier  = map2_dbl(simulated, hier_fit,  kl_score))
+         kl_hier  = map2_dbl(simulated, hier_fit,  kl_score),
+         kl_null =  map2_dbl(simulated, null_fit,  kl_score)
+         )
 
 
-kl_by_quartiles <- by_quartiles |>
-  select(hier_weight, gating_quartile, Temperature, kl_skill, kl_hier)|>
+kl_by_tertiles <- by_tertiles |>
+  select(gating, Temperature, kl_skill, kl_hier, kl_null)|>
   pivot_longer(cols= contains("kl"),  names_to = "Cost Matrix", values_to = "KL-Divergence")|>
-  mutate(`Cost Matrix`= if_else(`Cost Matrix`=="kl_skill", "Skill", "Hierarchical"))
+  mutate(`Cost Matrix`= case_when(`Cost Matrix`=="kl_skill"~"Skill",
+                                  `Cost Matrix`=="kl_hier"~"Hier",
+                                  `Cost Matrix`=="kl_null"~"Null"
+                                  )
+         )
 
 
-plots$dest_gate_kl_plot <- ggplot(kl_by_quartiles, aes(Temperature, `KL-Divergence`, colour=`Cost Matrix`))+
+plots$dest_gate_kl_plot <- ggplot(kl_by_tertiles, aes(Temperature, `KL-Divergence`, colour=`Cost Matrix`))+
   geom_vline(xintercept = 1, colour="white",lwd=2)+
   geom_line()+
   geom_point()+
   scale_y_continuous(trans="log10")+
   scale_x_continuous(trans="log2")+
-  facet_wrap(~gating_quartile, nrow=2)+
+  facet_wrap(~gating, nrow=1)+
   labs(title="Sinkhorn Performance across DGPs by Cost Matrix and Temperature",
        subtitle="KL-divergence is the log-likelihood loss: lower values indicate better fit")
 

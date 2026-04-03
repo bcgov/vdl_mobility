@@ -3,6 +3,7 @@ library(here)
 library(bcgovpond)
 library(janitor)
 library(conflicted)
+conflicts_prefer(dplyr::count)
 conflicts_prefer(dplyr::filter)
 #functions------------------------------------
 source(here("R", "other.R"))
@@ -151,11 +152,10 @@ noc_specificity <- noc_specificity |>
   mutate(
     specificity = log(KL) - predict(dest_fit_kl),
     TEER = str_sub(noc, 2, 2),
-    gating_quartile = ntile(specificity, 4),
-    hier_weight = (gating_quartile-1)/3,
-    gating_quartile = factor(
-      gating_quartile,
-      labels = c("Lowest gating","Q2","Q3","Highest gating")
+    gating = ntile(specificity, 3),
+    gating = factor(
+      gating,
+      labels = c("Low","Medium","High")
     )
   )
 
