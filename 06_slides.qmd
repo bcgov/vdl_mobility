@@ -66,7 +66,7 @@ dest_plt <- noc_specificity|>
 
 ## How does occupational distance shape mobility?
 
--   Workers tend to move between occupations with similar task requirements[@gathmann2010general]
+-   Workers tend to move between similar occupations[@gathmann2010general]
 
 $$
 P_{ij} \downarrow \text{ as } C_{ij} \uparrow
@@ -80,26 +80,25 @@ where $P_{ij}$ is the probability of moving from occupation $i$ to $j$, and $C_{
 
 ## What Defines Occupational Distance?
 
-- Mobility costs are latent → we evaluate alternative specifications  
+-   Mobility costs are latent → we evaluate alternative specifications
 
 **Three candidates:**
 
-- **Skill similarity**  
-  Distance based on O\*NET (U.S. occupational descriptors)
+-   **Skill similarity**\
+    Distance based on O\*NET skills, abilities, knowledge, work activities (U.S. occupational descriptors)
 
-- **Institutional hierarchy**  
-  Distance based on NOC (Canada’s occupational classification)
+-   **Institutional hierarchy**\
+    Distance based on NOC (Canada’s occupational classification)
 
-- **Binary switching cost** *(degenerate distance; null benchmark)*
+-   **Binary switching cost** *(degenerate distance; null benchmark)*
 
 ## Comparing distance metrics
 
-- Model mobility using entropy-regularized optimal transport (EROT)
+-   Model mobility using entropy-regularized optimal transport (EROT)
 
-- Allows distance metrics to be compared in a clean horse race
+-   Allows distance metrics to be compared in a clean horse race
 
-- We compare cost structures, holding mobility rates fixed
-
+-   We compare cost structures, holding mobility rates fixed
 
 ![.](images/horse.png){width="400px"}
 
@@ -107,8 +106,8 @@ where $P_{ij}$ is the probability of moving from occupation $i$ to $j$, and $C_{
 
 ::::: columns
 ::: {.column width="40%"}
-- **Local mobility:** gradual movement governed by distance  
-- **Non-local mobility:** education weakens distance constraints    
+-   **Local mobility:** gradual movement governed by distance\
+-   **Non-local mobility:** new educational attainment enables long distance "jumps"\
 :::
 
 ::: {.column width="60%"}
@@ -118,21 +117,25 @@ where $P_{ij}$ is the probability of moving from occupation $i$ to $j$, and $C_{
 
 ## Data: Census 2016–2021 Longitudinal
 
-- Split into three partitions:
+-   Split into three partitions:
 
-1) **Local:** no change in highest educational attainment  
-2) **Non-local:** increase in highest educational attainment  
-3) **Mismeasured:** self-employed, TEER mismatch (2016), ambiguous O*NET→NOC mapping  
+1)  **Local:** no change in highest educational attainment\
+2)  **Non-local:** increase in highest educational attainment\
+3)  **Mismeasured:** self-employed, TEER mismatch (2016), ambiguous O\*NET→NOC mapping
 
-- Falsification: models tested on out-of-regime partitions (fit should deteriorate)
+-   Falsification: models tested on out-of-regime partitions (fit should deteriorate)
 
 ## Local Mobility
 
 ::::: columns
 ::: {.column width="50%"}
--   Gravity models predict that flows increase with size and decline with distance
--   Law of universal gravitation: $F \propto \frac{m_1 m_2}{d^2}$
--   Our objective: isolate distance effect
+-   Flows increase with size and decline with mobility cost
+
+$$
+P_{ij} = \exp(\alpha_i + \beta_j - \gamma C_{ij})
+$$
+
+-   Our objective: isolate the role of the cost structure
 :::
 
 ::: {.column width="50%"}
@@ -140,25 +143,19 @@ where $P_{ij}$ is the probability of moving from occupation $i$ to $j$, and $C_{
 :::
 :::::
 
-## Gravity is standard—but weak on distance
+## Gravity is the standard empirical framework
 
-- Anderson & van Wincoop (2003) — 12,000+ citations  
+-   @anderson_vanwincoop_2003 — Fixed effects (multilateral resistance)
 
-$$
-P_{ij} = \exp(\alpha_i + \beta_j - \gamma C_{ij})
-$$
+-   @silva2006log — PPML (estimation)
 
-## Gravity Models
+-   Fit alone does not validate the cost matrix
 
-- Fixed effects can offset cost misspecification
-- Distance is not forced to explain bilateral flows
+-   Fixed effects can induce fit even with the wrong cost matrix
 
->Good fit ≠ correct cost
+## Entropy-Regularized Optimal Transport
 
-
-## Entropy-Regularized Optimal Transport 
-
-- imposes the observed origin and destination totals exactly
+-   imposes the observed origin and destination totals exactly
 
 $$
 \sum_j P_{ij} = a_i, \qquad
@@ -173,24 +170,22 @@ $$
 
 :::: center-slide
 ::: medium-text
-
-**Gravity:** treats the cost matrix as given and asks how strongly it matters  
+**Gravity:** treats the cost matrix as given and asks how strongly it matters\
 **EROT:** treats margins as given and asks how well the cost matrix explains flows
 :::
 ::::
 
-
-## Mobility determined by cost/temperature ratio
+## Mobility determined by cost–temperature ratio
 
 $$
 \frac{C_{ij}}{\varepsilon}
 $$
 
-- $\varepsilon$: scale of idiosyncratic utility shocks (logit/RUM interpretation) 
+- $\varepsilon$: scale of idiosyncratic utility shocks (logit/RUM interpretation)
 - Low $\varepsilon$ → cost-minimizing reallocation  
 - High $\varepsilon$ → diffuse mobility (approaches independence: $P_{ij} = a_i b_j$)
-- Only the ratio $\frac{C_{ij}}{\varepsilon}$ is identified
-- Results evaluated across a range of $\varepsilon$ (no single scale assumption)
+- Only *relative* cost differences (scaled by $\varepsilon$) shape mobility  
+- Results evaluated across a range of $\varepsilon$ (no single scale assumed)
 
 ## Skill distance: Based on 161 O\*NET measures
 
@@ -238,7 +233,7 @@ skills_heat |> plotly::layout(
 :::
 :::::
 
-## Hierarchical distance: derived from NOC taxonomy {.smaller}
+## Hierarchical distance: derived from [NOC](https://noc.esdc.gc.ca/Structure/Hierarchy) taxonomy {.smaller}
 
 ::::: columns
 ::: {.column width="30%"}
@@ -332,7 +327,7 @@ $$
 
 ## 
 
-::: {.column-screen}
+::: column-screen
 ```{r}
 #| fig-width: 15
 #| fig-height: 8.5
@@ -372,7 +367,7 @@ $$
 
 ## Destination gating tertiles
 
-::: {.column-screen}
+::: column-screen
 ```{r}
 #| out-width: 100%
 dest_plt <- dest_plt+
@@ -387,7 +382,8 @@ p
 :::
 
 ## Structure varies with destination gating
-::: {.column-screen}
+
+::: column-screen
 ```{r}
 #| fig-width: 15
 #| fig-height: 8
@@ -406,7 +402,6 @@ plots$dest_gate_kl_plot +
   )
 ```
 :::
-
 
 ## Non-local model
 
@@ -430,20 +425,16 @@ plots$dest_gate_kl_plot +
         -   Low gating → skill (transferability)
 
     -   Non-local mobility
-        
+
         -   Observed distance reflects education specificity and destination gating—large moves are enabled, not costless
 
-## Policy implication 
-
+## Policy implication
 
 -   Labour shortages in different segments likely require different adjustment mechanisms
 
-    -   High gating: adjustment depends on expanding formal training pipelines
-
     -   Low gating: reskilling and short-cycle training can accelerate adjustment
-
--   Shortages in highly gated occupations cannot be resolved quickly through reskilling alone       
-      
+    -   Medium gating: increasing supply of "first rung" workers (career ladders)
+    -   High gating: adjustment depends on expanding formal training pipelines
 
 ## 
 
@@ -453,6 +444,10 @@ Thank you!
 :::
 
 Questions?
+
+Coop Term in Ministry of Post Secondary Education and Future Skills: 
+
+contact Nicole.Bruce\@gov.bc.ca
 ::::
 
 ## Data: Census 2016–2021 Longitudinal File
