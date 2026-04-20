@@ -9,7 +9,7 @@ Entropy-regularized version is equivalent to decentralized choice with logit mob
 
 # But the labour market determines the number of workers in each occupation. Why are you treating those as fixed constraints?
 
-The objective of the paper is not to model equilibrium occupational employment levels. Instead, we treat the observed occupational growth and decline between censuses as given and ask a conditional question:given these margins, what mobility patterns are consistent with distance-based frictions?
+The objective of the paper is not to model equilibrium occupational employment levels. Instead, we treat the observed occupational growth and decline between censuses as given and ask a conditional question: given these margins, what mobility patterns are consistent with distance-based frictions?
  
 # Why do we think either of these distance measures corresponds to actual mobility costs? If both matrices are misspecified, what do we learn from the comparison?
 

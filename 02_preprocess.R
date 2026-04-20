@@ -1,96 +1,77 @@
 library(tidyverse)
 library(here)
-library(bcgovpond)
+library(bcgovpond) #to install pak::pak("bcgov/bcgovpond")
 library(janitor)
 library(conflicted)
+library(stringr)
 conflicts_prefer(dplyr::count)
 conflicts_prefer(dplyr::filter)
 #functions------------------------------------
 source(here("R", "other.R"))
 #constants----------------------------------------------
+
 skills <- list()
 hier <- list()
 
 #skill distance stuff------------------------------------------
-skills$onet_2019_to_soc_2018 <- read_view("2019_to_SOC_Crosswalk.xlsx", skip=3)|>
-  select(o_net_soc_code=`O*NET-SOC 2019 Code`, soc_2018=`2018 SOC Code`)
 
-skills$soc_2018_to_noc_2016 <- read_view("noc2016v1_3-soc2018us-eng.csv")|>
-  select(soc_2018=`SOC 2018 (US) Code`, noc_2016=`NOC 2016  Version 1.3 Code`)
+mapping <- read_csv("https://raw.githubusercontent.com/bcgov/onet-noc2021-crosswalk/main/output/3.0.0/onet_to_noc2021_mapping.csv")
 
-skills$noc_2016_to_noc_2021 <- read_view("noc2016v1_3-noc2021v1_0-eng.csv")|>
-  select(noc_2016=`NOC 2016 V1.3 Code`, noc_2021=`NOC 2021 V1.0 Code`, noc2021_title=`NOC 2021 V1.0 Title`)|>
-  mutate(noc_2016=str_pad(noc_2016, width=4, pad="0"),
-         noc_2021=str_pad(noc_2021, width=5, pad="0"),
-         noc2021_title=if_else(noc_2021 %in% c("00011", "00012", "00013", "00014", "00015"),
-                               "Senior managers - public and private sector",
-                               noc2021_title),
-         noc_2021=if_else(noc_2021 %in% c("00011", "00012", "00013", "00014", "00015"),
-                          "00018",
-                          noc_2021)
-        )
-
-skills$mapping <- left_join(skills$onet_2019_to_soc_2018, skills$soc_2018_to_noc_2016)|>
-  left_join(skills$noc_2016_to_noc_2021)%>%
-  select(noc_2021, noc2021_title, o_net_soc_code)|>
-  arrange(o_net_soc_code, noc_2021)|>
+mapped_nocs <- mapping|>
+  select(noc_plus_title)|>
   distinct()
 
-skills$nocs_we_want <- skills$mapping |>
-  select(noc_2021, noc2021_title) |>
-  distinct()|>
-  mutate(noc_plus_title=paste(noc_2021, noc2021_title, sep=": "))|>
-  select(noc_2021, noc_plus_title)|>
-  filter(noc_2021!="44200")
-
-skills$onet_raw <- tibble(file=c("Skills.xlsx", "Abilities.xlsx", "Knowledge.xlsx", "Work Activities.xlsx"))%>%
+onet_raw <- tibble(file=c("Skills.xlsx", "Abilities.xlsx", "Knowledge.xlsx", "Work Activities.xlsx"))%>%
   mutate(data=map(file, read_data))%>%
   select(-file)%>%
   unnest(data)%>%
-  pivot_wider(id_cols = o_net_soc_code, names_from = element_name, values_from = score)%>%
-  inner_join(skills$mapping)%>%
-  ungroup()%>%
-  select(-o_net_soc_code, -noc2021_title)%>%
-  select(noc_2021, everything())
+  pivot_wider(id_cols = o_net_soc_code, names_from = element_name, values_from = score)
 
-skills$onet_mapped <- skills$onet_raw|>
-  group_by(noc_2021)%>%
-  summarise(across(where(is.numeric), \(x) mean(x, na.rm = TRUE)))
+skill_cols <- setdiff(names(onet_raw), "o_net_soc_code")
 
-skills$four_digit <- skills$onet_raw|>
-  mutate(noc_four=str_sub(noc_2021,1, 4))|>
-  group_by(noc_four)|>
-  summarise(across(contains(":"), ~mean(.x, na.rm = TRUE)))
-
-skills$missing_four <- anti_join(skills$nocs_we_want, skills$onet_raw|>select(noc_2021))|>
-  mutate(noc_four=str_sub(noc_2021, 1, 4),
-         .after=noc_2021)|>
-  inner_join(skills$four_digit)|>
-  select(-noc_four, -noc_plus_title)
-
-skills$onet_full <- bind_rows(skills$onet_mapped, skills$missing_four)|>
-  inner_join(skills$nocs_we_want)|>
+noc_skills <- mapping|>
   ungroup()|>
-  arrange(noc_2021)|>
-  select(-noc_2021)|>
-  column_to_rownames("noc_plus_title")
-
-skills$onet_pca <- prcomp(skills$onet_full, center=TRUE, scale=TRUE)
-skills$noc_coords <- skills$onet_pca$x[, 1:10]#keep first 10 components
-skills$skills_noc_dist<- dist(skills$noc_coords, method = "euclidean")|>
+  left_join(onet_raw, by = c("onet_soc_code"="o_net_soc_code"))|>
+  mutate(across(all_of(skill_cols), ~ .x * down_weight))|>
+  group_by(noc_plus_title)|>
+  summarise(
+    across(all_of(skill_cols), \(x) sum(x, na.rm = TRUE)),
+    .groups = "drop"
+  )|>
+  column_to_rownames("noc_plus_title")|>
   as.matrix()
-skills$mean_dist <- skills$skills_noc_dist|>
-  mean()
 
-skills$mds2 <- cmdscale(skills$skills_noc_dist, k = 2)|>
-  as.data.frame()|>
-  rownames_to_column("noc_2021")|>
-  mutate(noc_2021=str_sub(noc_2021, 1, 5))
+onet_pca <- prcomp(noc_skills, center=TRUE, scale=TRUE)
 
+D_full_vec <- scale(noc_skills, center = onet_pca$center, scale = onet_pca$scale)|>
+  dist()|>
+  as.vector()
+max_k <- ncol(onet_pca$x)
+
+k_vs_spearman <- map_dfr(1:max_k, function(k) {
+  X_k <- onet_pca$x[, 1:k, drop = FALSE] #keep as a matrix even if k=1
+  D_k <- dist(X_k)
+  D_k_vec <- as.vector(D_k)
+
+  tibble(
+    k = k,
+    spearman = cor(D_full_vec, D_k_vec, method = "spearman")
+  )
+}
+)
+
+retain_num_pca <- k_vs_spearman|>
+  filter(spearman>.99)|>
+  filter(spearman==min(spearman))|>
+  pull(k)
+
+noc_coords <- onet_pca$x[, 1:retain_num_pca]#trim redundant
+skills_noc_dist<- dist(noc_coords, method = "euclidean")|>
+  as.matrix()
 
 #hierarchical distance--------------------------------------------
-hier$hierarchy_distance <- crossing(origin=skills$nocs_we_want$noc_plus_title,
-                               destination=skills$nocs_we_want$noc_plus_title)|>
+hier$hierarchy_distance <- crossing(origin=mapped_nocs$noc_plus_title,
+                               destination=mapped_nocs$noc_plus_title)|>
   h_dist()|>
   select(origin, destination, distance)
 
@@ -109,19 +90,28 @@ stopifnot(hier$hier_mat==t(hier$hier_mat))
 stopifnot(all(diag(hier$hier_mat) == 0))
 stopifnot(min(hier$hier_mat) == 0, max(hier$hier_mat) == 9)
 
-#destination gating
+# binary distance------------------------------------------
+
+binary_mat <- crossing(origin=mapped_nocs$noc_plus_title,
+                                    destination=mapped_nocs$noc_plus_title)|>
+  mutate(distance=if_else(origin==destination, 0,1))|>
+  pivot_wider(names_from = destination, values_from = distance)|>
+  column_to_rownames("origin")|>
+  as.matrix()
+
+#destination gating----------------------------------
 
 cip_noc <- bcgovpond::read_view("9810040401.csv") |>
   select(highest = starts_with("Highest"),
          cip     = starts_with("Major"),
          noc     = starts_with("Occupation"),
          value   = VALUE) |>
-  filter(highest != "Total - Highest certificate, diploma or degree",
-         !str_detect(noc, "44200")#no skill data for primary combat members
-         )|>
+  filter(highest != "Total - Highest certificate, diploma or degree")|>
   mutate(noc = str_replace(noc, "^(.{5})", "\\1:"),
          noc = str_replace(noc, "Seniors", "Senior")
-         )
+         )|>
+  inner_join(mapped_nocs, by = c("noc"="noc_plus_title"))
+
 
 #education proportions (aggregation across nocs)
 dest_p0 <- cip_noc |>
@@ -230,9 +220,9 @@ educ_specificity <- educ_specificity |>
 max_h <- max(hier$hier_mat, na.rm = TRUE)
 
 h_all <- offdiag(hier$hier_mat)
-s_all <- offdiag(skills$skills_noc_dist)
+s_all <- offdiag(skills_noc_dist)
 
-# Define the "non-maximal" hierarchical subset (exclude max distance and optionally zeros)
+# Define the "non-maximal" hierarchical subset (exclude max distance and zeros)
 h_nonmax <- h_all[h_all < max_h & h_all > 0]
 
 # Conditional quantile anchors within the informative (non-maximal) region
@@ -255,12 +245,18 @@ calibration <- tibble::tibble(
 )
 
 #write objects to disk--------------------------------
+
+skills$skills_noc_dist <- skills_noc_dist
+skills$onet_pca <- onet_pca
+skills$mapped_nocs <- mapped_nocs
+
 write_rds(skills, here("out", "skills.rds"))
 write_rds(hier, here("out", "hier.rds"))
+write_rds(binary_mat, here("out", "binary_mat.rds"))
 write_rds(noc_specificity, here("out", "noc_specificity.rds"))
 write_rds(educ_specificity, here("out", "educ_specificity.rds"))
 write_rds(calibration, here("out", "calibration.rds"))
-
+write_rds(k_vs_spearman, here("out", "k_vs_spearman.rds"))
 
 
 

@@ -16,16 +16,16 @@ bibliography: references.bib
 ---
 
 ```{r}
- library(tidyverse)
- library(here)
+library(tidyverse)
+library(here)
 library(plotly)
 source(here("R", "other.R"))
 plots <- read_rds(here("out","plots.rds"))
-lfs_data <- read_rds(here("out", "lfs_data.rds"))
 noc_specificity <- read_rds(here("out", "noc_specificity.rds"))
 hier <- read_rds(here("out", "hier.rds"))
 skills <- read_rds(here("out","skills.rds"))
-skills_mat <- skills[["skills_noc_dist"]]
+k_vs_spearman <- read_rds(here("out", "k_vs_spearman.rds"))
+skills_mat <- skills$skills_noc_dist
 skills_hc  <- hclust(as.dist(skills_mat), method = "average")
 skills_ord <- skills_hc$order
 skills_mat_ord <- skills_mat[skills_ord, skills_ord]
@@ -78,19 +78,21 @@ where $P_{ij}$ is the probability of moving from occupation $i$ to $j$, and $C_{
 
 > **Which** notion of occupational distance best rationalizes local mobility?
 
-## What Defines Occupational Distance?
+## What Defines Occupational Distance? {.smaller}
 
 -   Mobility costs are latent → we evaluate alternative specifications
 
 **Three candidates:**
 
--   **Skill similarity**\
-    Distance based on O\*NET skills, abilities, knowledge, work activities (U.S. occupational descriptors)
-
--   **Institutional hierarchy**\
-    Distance based on NOC (Canada’s occupational classification)
-
--   **Binary switching cost** *(degenerate distance; null benchmark)*
+1.  **Skill similarity**
+    -   Distance based on O\*NET skills, abilities, knowledge, work activities [mapped](https://github.com/bcgov/onet-noc2021-crosswalk) to NOC 2021.
+    -   Why not OaSIS?
+        -   The ability to falsify the model depends on observing where measurement error enters the data.
+        -   OaSIS hides that structure (black box).
+2.  **Institutional hierarchy**
+    -   Distance based on NOC (Canada’s occupational classification)
+3.  **Binary switching cost**
+    -   *(degenerate distance; stay vs move only)*
 
 ## Comparing distance metrics
 
@@ -102,28 +104,39 @@ where $P_{ij}$ is the probability of moving from occupation $i$ to $j$, and $C_{
 
 ![.](images/horse.png){width="400px"}
 
-## Two hypothesized mobility regimes
-
-::::: columns
-::: {.column width="40%"}
--   **Local mobility:** gradual movement governed by distance\
--   **Non-local mobility:** new educational attainment enables long distance "jumps"\
-:::
-
-::: {.column width="60%"}
-![](images/wormhole.webp)
-:::
-:::::
 
 ## Data: Census 2016–2021 Longitudinal
 
--   Split into three partitions:
+1. Core sample: Observations with reliable measurement
 
-1)  **Local:** no change in highest educational attainment\
-2)  **Non-local:** increase in highest educational attainment\
-3)  **Mismeasured:** self-employed, TEER mismatch (2016), ambiguous O\*NET→NOC mapping
+2. Robustness / Falsification samples (measurement challenges)
+    - Occupation mismeasurement
+      - Self-employed in either period  
+      - 2016 TEER–highest attainment mismatch  
 
--   Falsification: models tested on out-of-regime partitions (fit should deteriorate)
+    - Mapping misspecification
+      - Bottom 10% by (Herfindahl × similarity)  
+
+    - Joint mismeasurement
+      - Both sources of noise
+
+## Mobility regimes
+
+::::: columns
+::: {.column width="60%"}
+### Local mobility (EROT)
+- No change in highest educational attainment  
+- Distance-governed transitions  
+
+### Non-local mobility
+- Increase in highest educational attainment  
+- Education-enabled jumps
+:::
+
+::: {.column width="40%"}
+![](images/wormhole.webp)
+:::
+::::
 
 ## Local Mobility
 
@@ -153,25 +166,28 @@ $$
 
 -   Fixed effects can induce fit even with the wrong cost matrix
 
-## Entropy-Regularized Optimal Transport
 
--   imposes the observed origin and destination totals exactly
+## Entropy-Regularized Optimal Transport (EROT)
+
+We impose observed marginals:
 
 $$
-\sum_j P_{ij} = a_i, \qquad
-\sum_i P_{ij} = b_j
+\sum_j P_{ij} = a_i, \qquad \sum_i P_{ij} = b_j
 $$
 
--   The model therefore cannot adjust fixed effects to compensate for cost misspecification
+→ Flows are determined by costs **conditional on these constraints**
 
--   Equilibrium employment levels are taken as given; we model mobility flows conditional on those levels.
+We compare cost structures given fixed marginals
 
 ##  {background-image="images/hammer.jpg" background-size="cover" background-opacity="0.5"}
 
 :::: center-slide
 ::: medium-text
-**Gravity:** treats the cost matrix as given and asks how strongly it matters\
-**EROT:** treats margins as given and asks how well the cost matrix explains flows
+
+**Gravity:** estimates origin/destination attractiveness (fixed effects) jointly with costs  
+
+**EROT:** holds marginal structure fixed and evaluates cost models conditional on it
+
 :::
 ::::
 
@@ -181,11 +197,11 @@ $$
 \frac{C_{ij}}{\varepsilon}
 $$
 
-- $\varepsilon$: scale of idiosyncratic utility shocks (logit/RUM interpretation)
-- Low $\varepsilon$ → cost-minimizing reallocation  
-- High $\varepsilon$ → diffuse mobility (approaches independence: $P_{ij} = a_i b_j$)
-- Only *relative* cost differences (scaled by $\varepsilon$) shape mobility  
-- Results evaluated across a range of $\varepsilon$ (no single scale assumed)
+-   $\varepsilon$: scale of idiosyncratic utility shocks (logit/RUM interpretation)
+-   Low $\varepsilon$ → cost-minimizing reallocation\
+-   High $\varepsilon$ → diffuse mobility (approaches independence: $P_{ij} = a_i b_j$)
+-   Only *relative* cost differences (scaled by $\varepsilon$) shape mobility\
+-   Results evaluated across a range of $\varepsilon$ (no single scale assumed)
 
 ## Skill distance: Based on 161 O\*NET measures
 
@@ -195,8 +211,16 @@ $$
 #| fig-height: 10
 #| out-width: "100%"
 #| fig-align: center
-plot_pca_variance(skills$onet_pca, text_size=6)+
-   theme_minimal(base_size = 30)
+
+ggplot(k_vs_spearman, aes(x = k, y = spearman)) +
+  geom_hline(yintercept = .99, lty=2)+
+  geom_line() +
+  geom_point() +
+  labs(title="First 12 PCs achieve ≥0.99 rank preservation of pairwise distances.",
+       y = "Spearman correlation (distance ranks)",
+       x = "Number of PCs")+
+  theme(text=element_text(size=17))
+
 ```
 :::
 
@@ -293,77 +317,76 @@ hier_dist_heat |>
 plots$dist_relationship+theme(text=element_text(size=17))
 ```
 
-## The labour market as a whole:
 
-We simulate data where we know the true cost structure, then test whether the method recovers it.
+## The Labour Market as a Whole
 
-$$
-C = (1-w)C_{skill} + wC_{hier}
-$$
-
-with
+We simulate data from a mixture cost structure:
 
 $$
-\varepsilon = 1
+C^{\text{true}} = (1 - w)\,C_{\text{skill}} + w\,C_{\text{hier}}
 $$
 
-Then estimate models using:
+We then estimate using:
 
--   $C_{skill}$
--   $C_{hier}$
+- $C_{\text{skill}}$  
+- $C_{\text{hier}}$  
+- $C_{\text{binary}}$
+
+**All models are misspecified** (via mixture)
 
 ## Evaluating the Horse Race
 
--   We evaluate model fit using the Kullback–Leibler divergence between the observed transition matrix $P$ and the predicted matrix $\hat P$
+- **KL divergence:** how poorly the model predicts outcomes that occur.  
+- We measure fit using **relative KL improvement (vs. independence)**
 
 $$
-KL(P \parallel \hat P)
-=
-\sum_{ij} P_{ij}\log\frac{P_{ij}}{\hat P_{ij}}
+\frac{KL(P \parallel P^{\text{ind}}) - KL(P \parallel \hat P)}{KL(P \parallel P^{\text{ind}})}
 $$
 
--   KL divergence measures the **log-likelihood loss** of the model
--   Lower KL means the model assigns higher probability to observed transitions.
+- 0 → no improvement over independence  
+- 1 → perfect fit  
+- < 0 → worse than independence (typically low temp over-confidence)  
+
 
 ## 
 
 ::: column-screen
 ```{r}
 #| fig-width: 15
-#| fig-height: 8.5
+#| fig-height: 4
 #| out-width: 100%
  plots$kl_plots+
-  theme(text=element_text(size=15),
-    legend.position = c(0.95, 0.1),  # tweak
-    legend.background = element_rect(fill = "white", color = NA))+
+  # theme(text=element_text(size=15),
+  #   legend.position = c(0.95, 0.1),  # tweak
+  #   legend.background = element_rect(fill = "white", color = NA))+
     labs(x="Temperature(ε)")
 ```
+
+- At low $\varepsilon$ the model puts too much weight on cost minimizing moves,
+and too little weight on random moves: these "false negatives" are heavily penalized by KL.
+- The binary cost matrix is more resistant to making false negative mistakes, and wins at low temperatures.
+
 :::
 
-## Segmented Market Simulation
+## Segmented market simulation
 
--   Segment by destination gating (entry tightness)
+- Segment by destination gating (entry tightness)
 
-    -   Weakly gated → Skill distance
-    -   Moderately gated → Hierarchical distance
-    -   Highly gated → Binary (entry barriers dominate)
+    - Weakly gated → 100% skill distance  
+    - Moderately gated → 100% hierarchical distance  
+    - Highly gated → 100% binary distance (constrained mobility)
+    
+    
 
-## Destination gating:
+## Destination gating
 
-Some occupations draw from **very specific educational pipelines**, while others recruit from a broad mix of credentials
+Some occupations draw from **very specific educational pipelines**.
 
-1.  Calculate overall workforce education distribution $p_0$
-2.  Measure KL divergence of each occupation's education distribution $p$
+- Pipeline concentration: $$KL(p \parallel p_0)= \sum_{k} p_k \, \log\!\left(\frac{p_k}{p_{0k}}\right)$$ where $p_0$ is the overall workforce education distribution  
 
-$$
-KL(p \parallel p_0)
-$$
+- KL measures average log-surprise (relative to the workforce baseline)  
 
-3.  Remove the mechanical relationship with occupation size $T$
-
-$$
-\text{specificity} = \log(KL) - \widehat{E}[\log(KL) \mid \log(T)]
-$$
+- We remove mechanical relationship with occupation size: $$\text{specificity}= \log(KL) - \widehat{E}[\log(KL)\mid \log(T)]$$
 
 ## Destination gating tertiles
 
@@ -386,21 +409,15 @@ p
 ::: column-screen
 ```{r}
 #| fig-width: 15
-#| fig-height: 8
+#| fig-height: 6
 #| out-width: 100%
 
 plots$dest_gate_kl_plot +
-  scale_y_log10(labels = scales::label_number()) +
-  theme(
-    text = element_text(size = 15),
-    legend.position = c(0.95, 0.1),
-    legend.background = element_rect(fill = "white", color = NA)
-  ) +
-  labs(
-    x = "Temperature (\u03b5)",
-    title = NULL
-  )
+  labs(x = "Temperature (\u03b5)")
 ```
+
+- If gating is a continuum, using sextiles rather than tertiles would likely show a gradient-plateau-gradient structure
+
 :::
 
 ## Non-local model
@@ -433,7 +450,7 @@ plots$dest_gate_kl_plot +
 -   Labour shortages in different segments likely require different adjustment mechanisms
 
     -   Low gating: reskilling and short-cycle training can accelerate adjustment
-    -   Medium gating: increasing supply of "first rung" workers (career ladders)
+    -   Medium gating: direct workers towards "first rung" of career ladders
     -   High gating: adjustment depends on expanding formal training pipelines
 
 ## 
@@ -445,7 +462,7 @@ Thank you!
 
 Questions?
 
-Coop Term in Ministry of Post Secondary Education and Future Skills: 
+Coop Term in Ministry of Post Secondary Education and Future Skills:
 
 contact Nicole.Bruce\@gov.bc.ca
 ::::
@@ -535,12 +552,30 @@ The optimal solution:
 :::
 
 ::: {.column width="70%"}
-```{r, cache=TRUE}
+```{r}
 #| fig-height: 7
-plots$linearity&
-  theme(text = element_text(size = 14))
+# plots$linearity&
+#   theme(text = element_text(size = 14))
 ```
 :::
 :::::
+
+## 2016 TEER mismatch {.smaller}
+
+- Apparent distance traveled might be implausible if 2016 occupation is inconsistent 
+with highest educational attainment
+
+- Admisible TEERs are the Target TEER $\pm1$ plus TEER 0 (management)
+
+| Highest attainment                                     | Target TEER| Admissible TEERs |
+|:-------------------------------------------------------|:-----------|:-----------------|
+| No certificate, diploma or degree                      | 5          | 4, 5, 0          |
+| Secondary (high) school diploma                        | 4          | 3, 4, 5, 0       |
+| Apprenticeship or trades certificate or diploma        | 3          | 2, 3, 4, 0       |
+| College / CEGEP / other non-university                 | 2          | 1, 2, 3, 0       |
+| University certificate or diploma below bachelor       | 2          | 1, 2, 3, 0       |
+| Bachelor’s degree                                      | 1          | 1, 2, 0          |
+| Above bachelor (Master’s, PhD, MD, etc.)               | 1          | 1, 2, 0          |
+
 
 ## References
