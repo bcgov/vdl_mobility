@@ -3,8 +3,9 @@ read_data <- function(file_name){
     clean_names()%>%
     select(o_net_soc_code, element_name, scale_name, data_value)%>%
     pivot_wider(names_from = scale_name, values_from = data_value)%>%
-    mutate(score=sqrt(Importance*Level), #geometric mean of importance and level
-           #mutate(score=Level,
+    mutate(Importance=10*(Importance-1)/4,
+           Level=10*Level/7,
+           score=sqrt(Importance*Level), #geometric mean of importance and level
            category=(str_split(file_name,"\\.")[[1]][1]))%>%
     unite(element_name, category, element_name, sep=": ")%>%
     select(-Importance, -Level)
@@ -198,6 +199,16 @@ noc_prop_plot <- function(tbbl, inital_age, subsequent_age){
     theme(
       plot.title.position = "plot"
     )
+}
+
+
+subset_rows <- function(C, idx) {
+  C[idx, , drop = FALSE]
+}
+
+get_idx <- function(C, sub_regime_vec, label) {
+  aligned <- sub_regime_vec[rownames(C)]
+  aligned == label
 }
 
 

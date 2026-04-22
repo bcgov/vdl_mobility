@@ -142,10 +142,14 @@ noc_specificity <- noc_specificity |>
   mutate(
     specificity = log(KL) - predict(dest_fit_kl),
     TEER = str_sub(noc, 2, 2),
-    gating = ntile(specificity, 3),
-    gating = factor(
-      gating,
-      labels = c("Low","Medium","High")
+    tertile = ntile(specificity, 3),
+    sub_regime = case_when(TEER %in% c(0,5) ~ 1, #TEER 0 and 5 governed by skills
+                       tertile==3 & TEER %in% c(2,3,4) ~ 2, #even if highly specific education, TEERS 2,3,4 can move within hierarchy
+                       TRUE ~ tertile #otherwise regime determined by education specificity
+                      ),
+    sub_regime = factor(
+      sub_regime,
+      labels = c("Horizontal (Skill)", "Vertical (Hierarchy)", "Minimal (Binary)")
     )
   )
 

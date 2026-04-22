@@ -32,11 +32,11 @@ skills_mat_ord <- skills_mat[skills_ord, skills_ord]
 skills_xlab <- as.character(colnames(skills_mat_ord))
 skills_ylab <- as.character(rownames(skills_mat_ord))
 dest_plt <- noc_specificity|>
-  ggplot(aes(T, specificity, text=noc, fill=gating)) +
+  ggplot(aes(T, specificity, text=noc, fill=sub_regime)) +
   scale_fill_viridis_d()+
   geom_point(shape=21, size=3, stroke=.5) +
   scale_x_log10(labels=scales::comma)+
-  labs(fill="Gating")
+  labs(fill="Hypothesized Type of Movement \n and (appropriate cost matrix)")
 ```
 
 ::: {style="text-align: center;"}
@@ -356,39 +356,35 @@ $$
 #| fig-height: 4
 #| out-width: 100%
  plots$kl_plots+
-  # theme(text=element_text(size=15),
-  #   legend.position = c(0.95, 0.1),  # tweak
-  #   legend.background = element_rect(fill = "white", color = NA))+
     labs(x="Temperature(ε)")
 ```
 
 - At low $\varepsilon$ the model puts too much weight on cost minimizing moves,
-and too little weight on random moves: these "false negatives" are heavily penalized by KL.
-- The binary cost matrix is more resistant to making false negative mistakes, and wins at low temperatures.
+and too little weight elsewhere: "false negatives" are heavily penalized by KL.
+- The binary cost matrix is more agnostic regarding moves, makes fewer false negative mistakes at low temperatures.
 
 :::
 
-## Segmented market simulation
+## Hypothesized market segments
 
-- Segment by destination gating (entry tightness)
+- It seems plausible that the 3 cost matrices might "win" in different parts of the labour market. e.g.
 
-    - Weakly gated → 100% skill distance  
-    - Moderately gated → 100% hierarchical distance  
-    - Highly gated → 100% binary distance (constrained mobility)
-    
-    
+- Binary costs best rationalize the (lack of) mobility when 2016 occupation TEER 1 and education path is very tight. (e.g. Dentists)
+- Skill cost best rationalize mobility when 2016 occupation TEER 0 or 5 or education path is very diffuse. (Managers, Labourers)
+- Hierarchical cost best rationalizes mobility elsewhere.
 
-## Destination gating
 
-Some occupations draw from **very specific educational pipelines**.
+## Education Path Specificity.
 
-- Pipeline concentration: $$KL(p \parallel p_0)= \sum_{k} p_k \, \log\!\left(\frac{p_k}{p_{0k}}\right)$$ where $p_0$ is the overall workforce education distribution  
+Some occupations draw from **very specific educational paths**.
+
+- Education concentration: $$KL(p \parallel p_0)= \sum_{k} p_k \, \log\!\left(\frac{p_k}{p_{0k}}\right)$$ where $p_0$ is the overall workforce education distribution  
 
 - KL measures average log-surprise (relative to the workforce baseline)  
 
 - We remove mechanical relationship with occupation size: $$\text{specificity}= \log(KL) - \widehat{E}[\log(KL)\mid \log(T)]$$
 
-## Destination gating tertiles
+## Hypothesized market segments
 
 ::: column-screen
 ```{r}
@@ -396,7 +392,7 @@ Some occupations draw from **very specific educational pipelines**.
 dest_plt <- dest_plt+
   theme(text=element_text(size=17.5))+
   labs(x="Number of Workers",
-       y="Destination gating")
+       y="Education Path Specificity")
 p <- ggplotly(dest_plt, width=1200,
   height=600)
 p$x$data <- rev(p$x$data)
@@ -409,14 +405,12 @@ p
 ::: column-screen
 ```{r}
 #| fig-width: 15
-#| fig-height: 6
+#| fig-height: 8
 #| out-width: 100%
 
 plots$dest_gate_kl_plot +
   labs(x = "Temperature (\u03b5)")
 ```
-
-- If gating is a continuum, using sextiles rather than tertiles would likely show a gradient-plateau-gradient structure
 
 :::
 

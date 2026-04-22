@@ -1,5 +1,5 @@
 ---
-title: "Occupational Distance and Labour-Market Reallocation"
+title: "Where Skills vs Institutions Shape Occupational Mobility"
 author: "Richard Martin"
 format:
   pdf:
