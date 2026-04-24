@@ -3,17 +3,14 @@ library(here)
 library(bcgovpond) #to install pak::pak("bcgov/bcgovpond")
 library(janitor)
 library(conflicted)
+library(patchwork)
 library(stringr)
 conflicts_prefer(dplyr::count)
 conflicts_prefer(dplyr::filter)
 #functions------------------------------------
 source(here("R", "other.R"))
-#constants----------------------------------------------
 
-skills <- list()
-hier <- list()
-
-#skill distance stuff------------------------------------------
+#create distance matrices-------------------------------------------
 
 mapping <- read_csv("https://raw.githubusercontent.com/bcgov/onet-noc2021-crosswalk/main/output/3.0.0/onet_to_noc2021_mapping.csv")
 
@@ -66,38 +63,115 @@ retain_num_pca <- k_vs_spearman|>
   pull(k)
 
 noc_coords <- onet_pca$x[, 1:retain_num_pca]#trim redundant
-skills_noc_dist<- dist(noc_coords, method = "euclidean")|>
+
+skill_dist_raw<- dist(noc_coords, method = "euclidean")|>
   as.matrix()
 
 #hierarchical distance--------------------------------------------
-hier$hierarchy_distance <- crossing(origin=mapped_nocs$noc_plus_title,
+hier_dist_raw_long<- crossing(origin=mapped_nocs$noc_plus_title,
                                destination=mapped_nocs$noc_plus_title)|>
   h_dist()|>
   select(origin, destination, distance)
 
-hier$hier_counts <- hier$hierarchy_distance|>
+hier_counts <- hier_dist_raw_long|>
   group_by(distance)|>
   count()|>
   mutate(distance=factor(distance))
 
-hier$hier_wide <- hier$hierarchy_distance|>
+hier_dist_raw <- hier_dist_raw_long|>
   pivot_wider(names_from = destination, values_from = distance)|>
-  column_to_rownames("origin")
+  column_to_rownames("origin")|>
+  as.matrix()
 
-hier$hier_mat <- hier$hier_wide|>as.matrix()
 #sanity checks
-stopifnot(hier$hier_mat==t(hier$hier_mat))
-stopifnot(all(diag(hier$hier_mat) == 0))
-stopifnot(min(hier$hier_mat) == 0, max(hier$hier_mat) == 9)
+stopifnot(hier_dist_raw==t(hier_dist_raw))
+stopifnot(all(diag(hier_dist_raw) == 0))
+stopifnot(min(hier_dist_raw) == 0, max(hier_dist_raw) == 9)
 
 # binary distance------------------------------------------
 
-binary_mat <- crossing(origin=mapped_nocs$noc_plus_title,
+binary_dist <- crossing(origin=mapped_nocs$noc_plus_title,
                                     destination=mapped_nocs$noc_plus_title)|>
   mutate(distance=if_else(origin==destination, 0,1))|>
   pivot_wider(names_from = destination, values_from = distance)|>
   column_to_rownames("origin")|>
   as.matrix()
+
+#sanity checks
+stopifnot(binary_dist==t(binary_dist))
+stopifnot(all(diag(binary_dist) == 0))
+stopifnot(min(binary_dist) == 0, max(binary_dist) == 1)
+
+#Calibration-------------------------------------
+
+max_h <- max(hier_dist_raw, na.rm = TRUE)
+h_all <- offdiag(hier_dist_raw)
+s_all <- offdiag(skill_dist_raw)
+
+# Define the "non-maximal" hierarchical subset (exclude max distance and zeros)
+h_nonmax <- h_all[h_all < max_h & h_all > 0]
+
+# Conditional quantile anchors within the informative (non-maximal) region
+q_cond <- c(0.25, 0.50, 0.75)
+h_anchor <- as.numeric(quantile(h_nonmax, probs = q_cond, na.rm = TRUE, type = 7))
+# Map each anchor value to its unconditional percentile in the FULL hierarchical distribution
+# (including max-distance pairs). This is the empirical CDF value F_H(h_anchor).
+p_uncond <- sapply(h_anchor, function(x) mean(h_all <= x, na.rm = TRUE))
+# Apply those percentiles to the skill distance distribution
+s_anchor <- as.numeric(quantile(s_all, probs = p_uncond, na.rm = TRUE, type = 7))
+
+# Summarize
+calibration <- tibble::tibble(
+  q_cond = q_cond,
+  h_anchor = h_anchor,
+  p_uncond = p_uncond,
+  s_anchor = s_anchor
+)
+
+#Normalization----------------------
+
+skill_dist <- skill_dist_raw/calibration$s_anchor[calibration$q_cond==.5]
+hier_dist <- hier_dist_raw/calibration$h_anchor[calibration$q_cond==.5]
+
+hdfr <-   data.frame(value = as.vector(hier_dist_raw),  distance = "Hierarchy")
+sdfr <-   data.frame(value = as.vector(skill_dist_raw), distance = "Skills")
+bdfr <-   data.frame(value = as.vector(binary_dist), distance = "Binary")
+
+raw <- ggplot(mapping=aes(x = value, colour=distance)) +
+  geom_vline(xintercept = 4, lty=2, alpha=.25)+
+  geom_hline(yintercept = calibration$p_uncond[calibration$q_cond==.5], lty=2, alpha=.25)+
+  stat_ecdf(data=bdfr, lwd=3, alpha=.5) +
+  stat_ecdf(data=sdfr, lwd=2, alpha=.75) +
+  stat_ecdf(data=hdfr, lwd=.33, alpha=1) +
+  scale_colour_brewer(palette = "Dark2")+
+  scale_x_continuous(trans="log10")+
+  labs(title="Raw Distance",
+       x = "Distance",
+       y = "Empirical CDF",
+       colour = "Matrix") +
+  theme_minimal()
+
+hdfn <-   data.frame(value = as.vector(hier_dist),  distance = "Hierarchy")
+sdfn <-   data.frame(value = as.vector(skill_dist), distance = "Skills")
+bdfn <-   data.frame(value = as.vector(binary_dist), distance = "Binary")
+
+normalized <- ggplot(mapping=aes(x = value, colour=distance)) +
+  geom_hline(yintercept = calibration$p_uncond[calibration$q_cond==.5], alpha=.25, lty=2)+
+  geom_vline(xintercept = 1, lty=2, alpha=.25)+
+  stat_ecdf(data=bdfn, lwd=3, alpha=.5) +
+  stat_ecdf(data=sdfn, lwd=2, alpha=.75) +
+  stat_ecdf(data=hdfn, lwd=.33, alpha=1) +
+  scale_colour_brewer(palette = "Dark2")+
+  scale_x_continuous(trans="log10")+
+  labs(title="Normalized Distance",
+       x = "Distance",
+       y = "Empirical CDF",
+       colour = "Matrix") +
+  theme_minimal()
+
+dist_cdfs <- raw+normalized+
+  plot_layout(guides = "collect")
+
 
 #destination gating----------------------------------
 
@@ -143,8 +217,8 @@ noc_specificity <- noc_specificity |>
     specificity = log(KL) - predict(dest_fit_kl),
     TEER = str_sub(noc, 2, 2),
     tertile = ntile(specificity, 3),
-    sub_regime = case_when(TEER %in% c(0,5) ~ 1, #TEER 0 and 5 governed by skills
-                       tertile==3 & TEER %in% c(2,3,4) ~ 2, #even if highly specific education, TEERS 2,3,4 can move within hierarchy
+    sub_regime = case_when(TEER %in% c(0, 5) ~ 1, #TEER 0 and 5 governed by skills
+                       tertile==3 & TEER %in% c(3,4) ~ 2, #even if highly specific education, TEERS 2,3,4 can move within hierarchy
                        TRUE ~ tertile #otherwise regime determined by education specificity
                       ),
     sub_regime = factor(
@@ -219,48 +293,17 @@ educ_specificity <- educ_specificity |>
     ordered = TRUE
   ))
 
-#anchoring epsilon-------------------------
 
-max_h <- max(hier$hier_mat, na.rm = TRUE)
-
-h_all <- offdiag(hier$hier_mat)
-s_all <- offdiag(skills_noc_dist)
-
-# Define the "non-maximal" hierarchical subset (exclude max distance and zeros)
-h_nonmax <- h_all[h_all < max_h & h_all > 0]
-
-# Conditional quantile anchors within the informative (non-maximal) region
-q_cond <- c(0.25, 0.50, 0.75)
-h_anchor <- as.numeric(quantile(h_nonmax, probs = q_cond, na.rm = TRUE, type = 7))
-
-# Map each anchor value to its unconditional percentile in the FULL hierarchical distribution
-# (including max-distance pairs). This is the empirical CDF value F_H(h_anchor).
-p_uncond <- sapply(h_anchor, function(x) mean(h_all <= x, na.rm = TRUE))
-
-# Apply those percentiles to the skill distance distribution
-s_anchor <- as.numeric(quantile(s_all, probs = p_uncond, na.rm = TRUE, type = 7))
-
-# Summarize
-calibration <- tibble::tibble(
-  q_cond = q_cond,
-  h_anchor = h_anchor,
-  p_uncond = p_uncond,
-  s_anchor = s_anchor
-)
-
-#write objects to disk--------------------------------
-
-skills$skills_noc_dist <- skills_noc_dist
-skills$onet_pca <- onet_pca
-skills$mapped_nocs <- mapped_nocs
-
-write_rds(skills, here("out", "skills.rds"))
-write_rds(hier, here("out", "hier.rds"))
-write_rds(binary_mat, here("out", "binary_mat.rds"))
+write_rds(skill_dist_raw, here("out", "skill_dist_raw.rds"))
+write_rds(k_vs_spearman, here("out", "k_vs_spearman.rds"))
+write_rds(hier_dist_raw, here("out", "hier_dist_raw.rds"))
+write_rds(binary_dist, here("out", "binary_dist.rds"))
+write_rds(skill_dist, here("out", "skill_dist.rds"))
+write_rds(hier_dist, here("out", "hier_dist.rds"))
+write_rds(dist_cdfs, here("out", "dist_cdfs.rds"))
 write_rds(noc_specificity, here("out", "noc_specificity.rds"))
 write_rds(educ_specificity, here("out", "educ_specificity.rds"))
-write_rds(calibration, here("out", "calibration.rds"))
-write_rds(k_vs_spearman, here("out", "k_vs_spearman.rds"))
+
 
 
 

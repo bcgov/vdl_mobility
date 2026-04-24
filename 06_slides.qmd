@@ -20,17 +20,23 @@ library(tidyverse)
 library(here)
 library(plotly)
 source(here("R", "other.R"))
-plots <- read_rds(here("out","plots.rds"))
-noc_specificity <- read_rds(here("out", "noc_specificity.rds"))
-hier <- read_rds(here("out", "hier.rds"))
-skills <- read_rds(here("out","skills.rds"))
+
+skill_dist_raw <- read_rds(here("out", "skill_dist_raw.rds"))
+hier_dist_raw<- read_rds(here("out", "hier_dist_raw.rds"))
+binary_dist<- read_rds(here("out", "binary_dist.rds"))
+skill_dist<- read_rds(here("out", "skill_dist.rds"))
+hier_dist<- read_rds(here("out", "hier_dist.rds"))
+dist_cdfs<- read_rds(here("out", "dist_cdfs.rds"))
+noc_specificity<- read_rds(here("out", "noc_specificity.rds"))
+educ_specificity<- read_rds(here("out", "educ_specificity.rds"))
+sim_plots<- read_rds(here("out", "sim_plots.rds"))
 k_vs_spearman <- read_rds(here("out", "k_vs_spearman.rds"))
-skills_mat <- skills$skills_noc_dist
-skills_hc  <- hclust(as.dist(skills_mat), method = "average")
+
+skills_hc  <- hclust(as.dist(skill_dist_raw), method = "average")
 skills_ord <- skills_hc$order
-skills_mat_ord <- skills_mat[skills_ord, skills_ord]
-skills_xlab <- as.character(colnames(skills_mat_ord))
-skills_ylab <- as.character(rownames(skills_mat_ord))
+skills_raw_ord <- skill_dist_raw[skills_ord, skills_ord]
+skills_xlab <- as.character(colnames(skills_raw_ord))
+skills_ylab <- as.character(rownames(skills_raw_ord))
 dest_plt <- noc_specificity|>
   ggplot(aes(T, specificity, text=noc, fill=sub_regime)) +
   scale_fill_viridis_d()+
@@ -110,9 +116,9 @@ where $P_{ij}$ is the probability of moving from occupation $i$ to $j$, and $C_{
 1. Core sample: Observations with reliable measurement
 
 2. Robustness / Falsification samples (measurement challenges)
-    - Occupation mismeasurement
-      - Self-employed in either period  
-      - 2016 TEER–highest attainment mismatch  
+    - 2016 Occupation mismeasurement
+      - Self-employed  
+      - TEER–highest attainment mismatch  
 
     - Mapping misspecification
       - Bottom 10% by (Herfindahl × similarity)  
@@ -229,7 +235,7 @@ ggplot(k_vs_spearman, aes(x = k, y = spearman)) +
 skills_heat <- plotly::plot_ly(
   x = skills_xlab,
   y = skills_ylab,
-  z = skills_mat_ord,
+  z = skills_raw_ord,
   width=660,
   height=495,
   type = "heatmap",
@@ -275,15 +281,15 @@ skills_heat |> plotly::layout(
 
 ::: {.column width="70%"}
 ```{r}
-hier_hc  <- hclust(as.dist(hier$hier_mat), method = "average")
+hier_hc  <- hclust(as.dist(hier_dist_raw), method = "average")
 hier_ord <- hier_hc$order
-hier_mat_ord <- hier$hier_mat[hier_ord, hier_ord]
-hier_xlab <- as.character(colnames(hier_mat_ord))
-hier_ylab <- as.character(rownames(hier_mat_ord))
+hier_raw_ord <- hier_dist_raw[hier_ord, hier_ord]
+hier_xlab <- as.character(colnames(hier_raw_ord))
+hier_ylab <- as.character(rownames(hier_raw_ord))
 hier_dist_heat <- plotly::plot_ly(
   x = hier_xlab,
   y = hier_ylab,
-  z = hier_mat_ord,
+  z = hier_raw_ord,
   width=800,
   height=600,
   type = "heatmap",
@@ -311,10 +317,10 @@ hier_dist_heat |>
 :::
 :::::
 
-## Skill and Hierarchical distances: similar but distinct
+## Empirical CDFs 
 
 ```{r}
-plots$dist_relationship+theme(text=element_text(size=17))
+dist_cdfs
 ```
 
 
@@ -355,8 +361,7 @@ $$
 #| fig-width: 15
 #| fig-height: 4
 #| out-width: 100%
- plots$kl_plots+
-    labs(x="Temperature(ε)")
+ sim_plots$kl_plots
 ```
 
 - At low $\varepsilon$ the model puts too much weight on cost minimizing moves,
@@ -365,16 +370,8 @@ and too little weight elsewhere: "false negatives" are heavily penalized by KL.
 
 :::
 
-## Hypothesized market segments
 
-- It seems plausible that the 3 cost matrices might "win" in different parts of the labour market. e.g.
-
-- Binary costs best rationalize the (lack of) mobility when 2016 occupation TEER 1 and education path is very tight. (e.g. Dentists)
-- Skill cost best rationalize mobility when 2016 occupation TEER 0 or 5 or education path is very diffuse. (Managers, Labourers)
-- Hierarchical cost best rationalizes mobility elsewhere.
-
-
-## Education Path Specificity.
+## Specificity Tertiles
 
 Some occupations draw from **very specific educational paths**.
 
@@ -383,6 +380,15 @@ Some occupations draw from **very specific educational paths**.
 - KL measures average log-surprise (relative to the workforce baseline)  
 
 - We remove mechanical relationship with occupation size: $$\text{specificity}= \log(KL) - \widehat{E}[\log(KL)\mid \log(T)]$$
+
+## Local mobility regimes
+
+| Mobility   | Description                                | Cost Matrix  |
+|:-----------|:-------------------------------------------|:-------------|
+| Limited    | (Top tertile & TEERs 1,2)                  | Binary       |
+| Vertical   | Middle tertile + (Top tertile & TEERs 3,4) | Hierarchical |
+| Horizontal | Bottom tertile + all TEERs 0,5             | Skill        |
+
 
 ## Hypothesized market segments
 
@@ -400,7 +406,7 @@ p
 ```
 :::
 
-## Structure varies with destination gating
+## Mobility varies by segment
 
 ::: column-screen
 ```{r}
@@ -408,7 +414,7 @@ p
 #| fig-height: 8
 #| out-width: 100%
 
-plots$dest_gate_kl_plot +
+sim_plots$dest_gate_kl_plot+
   labs(x = "Temperature (\u03b5)")
 ```
 
@@ -429,23 +435,23 @@ plots$dest_gate_kl_plot +
 
 -   Mobility is heterogeneous (local vs non-local)
 
-    -   Local mobility: No single distance metric dominates
+    -   Local mobility: also hetergeneous!
 
-        -   High gating → binary (limited local movement)
-        -   Medium gating → hierarchy (career ladders)
-        -   Low gating → skill (transferability)
-
+        -   limited movement → binary 
+        -   horizontal movement → skill 
+        -   vertical movement → hierarchy 
+        
     -   Non-local mobility
 
-        -   Observed distance reflects education specificity and destination gating—large moves are enabled, not costless
+        -   Distance travelled ~ education specificity and destination gating
 
 ## Policy implication
 
 -   Labour shortages in different segments likely require different adjustment mechanisms
 
-    -   Low gating: reskilling and short-cycle training can accelerate adjustment
-    -   Medium gating: direct workers towards "first rung" of career ladders
-    -   High gating: adjustment depends on expanding formal training pipelines
+    -   Horizontal: reskilling and short-cycle training can accelerate adjustment
+    -   Vertical: direct workers towards "first rung" of career ladders
+    -   Limited: adjustment depends on expanding formal training pipelines
 
 ## 
 
