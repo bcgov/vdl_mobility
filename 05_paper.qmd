@@ -1,0 +1,225 @@
+---
+title: "Occupational Mobility Regimes: Skills, Institutions, and Destination Gating"
+author: "Richard Martin"
+format:
+  pdf:
+    documentclass: article
+    toc: true
+    number-sections: true
+    geometry: margin=1in
+bibliography: references.bib
+header-includes:
+  - \usepackage{amsmath}
+  - \usepackage{amssymb}
+  - \DeclareMathOperator*{\argmin}{argmin}
+---
+
+## Abstract
+
+Workers differ markedly in their ability to move across occupations, yet the mechanisms governing this heterogeneity remain poorly understood. This paper identifies occupational mobility regimes — segments of the labour market where distinct cost structures govern transitions — by separating local mobility, where workers move without acquiring new education, from non-local mobility, where new educational attainment enables discontinuous jumps across occupational space. For local mobility, we apply entropy-regularized optimal transport to linked Canadian census microdata from 2016 to 2021, conducting a horse race among competing cost structures — skill similarity, institutional hierarchy, and binary switching costs — using KL divergence from empirical transition distributions as the evaluation criterion. We introduce destination gating, a measure of the concentration of an occupation's educational entry pipeline relative to the workforce baseline, and show that the cost structure governing local mobility varies systematically with destination gating. Highly gated regulated professions exhibit near-binary mobility constraints, intermediate gating occupations follow hierarchical career ladder logic, and low gating occupations are governed primarily by skill transferability. For non-local mobility, we show that observed transition distances reflect the specificity of the educational credential acquired and the gating of the destination occupation. These findings suggest that labour market adjustment to occupational demand shocks depends critically on the segment affected, with implications for the design of training and reskilling policy.
+
+
+## Introduction
+
+- Labour markets continually reallocate workers in response to technological change, policy, and shocks
+- Entry and exit absorb part of the adjustment, but some workers must transition across occupations
+- Some transitions are harder than others — but what determines difficulty?
+- Workers tend to move between similar occupations [Gathmann & Schönberg 2010]; transition probability declines with occupational distance
+- Central question: **which notion of occupational distance best rationalizes local mobility?**
+- We distinguish two mobility regimes: local (no new educational attainment) and non-local (new attainment acquired)
+- For local mobility, we conduct a horse race across three cost structures using entropy-regularized optimal transport (EROT)
+- For non-local mobility, we examine how education specificity and destination gating jointly determine the distance of jumps
+- Preview of findings [PLACEHOLDER]
+- Policy implication: labour shortages in different segments require different adjustment mechanisms
+
+## Conceptual Framework
+
+### Local vs Non-local Mobility
+
+- Define local mobility: transitions with no change in highest educational attainment; governed by distance costs
+- Define non-local mobility: transitions accompanied by new educational attainment; "wormhole" jumps across occupational space
+- The local/non-local partition is the paper's central structural choice — motivate it carefully here
+- Non-local transitions are **enabled, not costless**: observed distance reflects education specificity and destination gating
+
+###  Destination Gating
+
+- Some occupations draw from very specific educational pipelines
+- Pipeline concentration measured via KL divergence of occupation's educational distribution from workforce baseline
+- Size-residualized to remove mechanical relationship with occupation size
+- Destination gating is an implicit structural feature of the occupational landscape (contrast with explicit gating via occupational licensing [Kleiner & Krueger])
+
+### Why EROT?
+
+- Gravity model (Anderson & van Wincoop 2003; Silva & Tenreyro 2006) estimates origin/destination fixed effects jointly with costs — fixed effects can induce fit even with the wrong cost matrix
+- EROT holds marginal structure fixed and evaluates cost models conditional on observed margins
+- Allows cost structures to be compared in a clean horse race, holding mobility rates fixed
+- Logit / random utility interpretation: ε scales idiosyncratic utility shocks; only relative cost differences (scaled by ε) shape mobility
+
+## Cost Metrics
+
+### Skill Distance
+
+- Based on 161 O\*NET skills, abilities, knowledge, and work activities measures mapped to NOC 2021
+- Dimensionality reduced via PCA: first 12 principal components achieve ≥0.99 rank preservation of pairwise distances
+- Note on OaSIS: falsifiability requires observing where measurement error enters; OaSIS obscures that structure
+
+###  Hierarchical Distance
+
+- Derived from the NOC taxonomy
+- Distance = 0 if all five digits match; distance = 1 if first four match; distance = 2 if first three match; distance = 3 + |ΔTEER| if first digit matches; distance = 9 otherwise
+- Captures institutional classification structure rather than skill content
+
+###  Binary Switching Cost
+
+- Degenerate distance: stay vs. move only
+- Serves as a baseline and is informative about highly gated destinations where local movement is constrained
+
+###  Relationship Between Metrics
+
+- Skill and hierarchical distances are similar but distinct [figure]
+- Both are needed: each captures a different dimension of occupational proximity
+
+
+
+## Data
+
+### Census 2016–2021 Longitudinal File
+
+- Both censuses linked via the central Derived Record Depository (DRD)
+- Probabilistic linkage using name, sex, date of birth, phone, postal code
+- High linkage quality but not perfect — population estimates would be biased, but this is not the objective
+- Robustness is to selection only if sample systematically favours one distance metric
+
+### Sample Construction
+
+**Core sample:** observations with reliable measurement [sample size PLACEHOLDER]
+
+**Robustness / falsification samples (measurement challenges):**
+
+*Occupation mismeasurement:*
+- Self-employed in either period
+- 2016 TEER–highest attainment mismatch (observed occupation inconsistent with educational attainment)
+
+*Mapping misspecification:*
+- Bottom 10% by Herfindahl × similarity
+
+*Joint mismeasurement:*
+- Both sources of noise combined
+
+### TEER–Attainment Admissibility Table
+
+[Table as in slides — maps highest attainment to target TEER and admissible TEER range]
+
+
+##  Methodology
+
+###  EROT Formulation
+
+The EROT problem minimizes:
+
+$$\mathcal{L} = \sum_{ij} P_{ij} C_{ij} + \varepsilon \sum_{ij} P_{ij}(\log P_{ij} - 1) + \sum_i f_i(a_i - \sum_j P_{ij}) + \sum_j g_j(b_j - \sum_i P_{ij})$$
+
+subject to marginal constraints: $\sum_j P_{ij} = a_i$ and $\sum_i P_{ij} = b_j$
+
+First-order conditions yield:
+
+$$\log P_{ij} = \frac{f_i}{\varepsilon} + \frac{g_j}{\varepsilon} - \frac{C_{ij}}{\varepsilon}$$
+
+Exponentiating: $P_{ij} = u_i \, e^{-C_{ij}/\varepsilon} \, v_j$
+
+- Strict convexity → unique solution $P^\star$
+- Solution is a row- and column-rescaling of the kernel $e^{-C_{ij}/\varepsilon}$
+- Sinkhorn algorithm alternates row and column corrections until both margins are satisfied
+- Implemented via log-domain Sinkhorn solver for numerical stability [safesink]
+
+### Temperature Parameter (ε)
+
+- ε scales idiosyncratic utility shocks (logit / RUM interpretation)
+- Low ε → cost-minimizing reallocation; high ε → diffuse mobility (approaches independence $P_{ij} = a_i b_j$)
+- Only relative cost differences scaled by ε shape mobility
+- Results evaluated across a range of ε — no single scale assumed
+- [NOTE: describe epsilon selection via conditional median matching with grid robustness checks here]
+
+### Evaluation: KL Divergence Horse Race
+
+- KL divergence measures how poorly the model predicts outcomes that occur
+- Relative KL improvement (vs. independence baseline):
+
+$$\frac{KL(P \parallel P^{\text{ind}}) - KL(P \parallel \hat{P})}{KL(P \parallel P^{\text{ind}})}$$
+
+- 0 → no improvement over independence; 1 → perfect fit; <0 → worse than independence
+
+### Destination Gating Measure
+
+Pipeline concentration (KL from workforce baseline):
+
+$$KL(p \parallel p_0) = \sum_k p_k \log\left(\frac{p_k}{p_{0k}}\right)$$
+
+Size-residualized specificity:
+
+$$\text{specificity} = \log(KL) - \hat{E}[\log(KL) \mid \log(T)]$$
+
+### Non-local Model
+
+- Outcome: distance of jump (in occupational space)
+- Predictors: CIP–NOC KL specificity measures + origin fixed effects
+  - Education specificity → CIP exit concentration (wormhole entrance)
+  - Destination gating → NOC entry concentration (wormhole exit)
+- Hypotheses: new attainment → distance increases with specificity; no new attainment → no systematic relationship
+
+### Diagnostic Plots
+
+- If distance rationalizes mobility, log excess mobility declines linearly with distance
+- If the metric is misspecified, it will not
+
+
+##  Results [PLACEHOLDER — awaiting data]
+
+###  Local Mobility: Horse Race Results
+
+[KL improvement figures by cost metric and temperature, for core and robustness samples]
+
+###  Heterogeneity by Destination Gating
+
+[KL improvement by gating tertile — expected gradient: binary dominates at high gating, skill dominates at low gating]
+
+###  Non-local Mobility
+
+[Distance ~ specificity regressions; new attainment vs. no new attainment comparison]
+
+
+##  Policy Implications
+
+Labour shortages in different segments require different adjustment mechanisms:
+
+- **Low gating:** reskilling and short-cycle training can accelerate adjustment (skill transferability governs mobility)
+- **Medium gating:** direct workers towards the first rung of career ladders (hierarchical structure governs mobility)
+- **High gating:** adjustment depends on expanding formal training pipelines (binary constraint — either you have the credential or you don't)
+
+---
+
+##  Conclusion [PLACEHOLDER]
+
+- What the paper establishes
+- What the policy takeaways are
+- Limitations and future directions
+
+---
+
+## References
+
+[Gathmann & Schönberg 2010]  
+[Anderson & van Wincoop 2003]  
+[Silva & Tenreyro 2006]  
+[Galichon — optimal transport methods]  
+[Kleiner & Krueger — occupational licensing]  
+[Others TBD from literature review]
+
+---
+
+*Notes to self:*
+- *Methodology section is highest-value writing target pre-data*
+- *Introduction: lead with substantive puzzle, introduce EROT as the tool that answers it*
+- *Clarify epsilon selection procedure in §5.2*
+- *Describe residual heatmap diagnostic bridge function between Act 1 and Act 2 in §5.6*
+- *Confirm whether uniform off-diagonal null baseline needs its own subsection*

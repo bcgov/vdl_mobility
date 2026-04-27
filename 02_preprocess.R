@@ -140,9 +140,9 @@ bdfr <-   data.frame(value = as.vector(binary_dist), distance = "Binary")
 raw <- ggplot(mapping=aes(x = value, colour=distance)) +
   geom_vline(xintercept = 4, lty=2, alpha=.25)+
   geom_hline(yintercept = calibration$p_uncond[calibration$q_cond==.5], lty=2, alpha=.25)+
-  stat_ecdf(data=bdfr, lwd=3, alpha=.5) +
-  stat_ecdf(data=sdfr, lwd=2, alpha=.75) +
-  stat_ecdf(data=hdfr, lwd=.33, alpha=1) +
+  stat_ecdf(data=bdfr, lwd=2, alpha=.5) +
+  stat_ecdf(data=sdfr, lwd=1, alpha=.75) +
+  stat_ecdf(data=hdfr, lwd=.25, alpha=1) +
   scale_colour_brewer(palette = "Dark2")+
   scale_x_continuous(trans="log10")+
   labs(title="Raw Distance",
@@ -158,9 +158,9 @@ bdfn <-   data.frame(value = as.vector(binary_dist), distance = "Binary")
 normalized <- ggplot(mapping=aes(x = value, colour=distance)) +
   geom_hline(yintercept = calibration$p_uncond[calibration$q_cond==.5], alpha=.25, lty=2)+
   geom_vline(xintercept = 1, lty=2, alpha=.25)+
-  stat_ecdf(data=bdfn, lwd=3, alpha=.5) +
-  stat_ecdf(data=sdfn, lwd=2, alpha=.75) +
-  stat_ecdf(data=hdfn, lwd=.33, alpha=1) +
+  stat_ecdf(data=bdfn, lwd=2, alpha=.5) +
+  stat_ecdf(data=sdfn, lwd=1, alpha=.75) +
+  stat_ecdf(data=hdfn, lwd=.25, alpha=1) +
   scale_colour_brewer(palette = "Dark2")+
   scale_x_continuous(trans="log10")+
   labs(title="Normalized Distance",

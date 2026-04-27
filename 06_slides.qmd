@@ -361,7 +361,7 @@ $$
 #| fig-width: 15
 #| fig-height: 4
 #| out-width: 100%
- sim_plots$kl_plots
+ sim_plots$global_kl_plots
 ```
 
 - At low $\varepsilon$ the model puts too much weight on cost minimizing moves,
