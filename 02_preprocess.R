@@ -2,8 +2,8 @@ library(tidyverse)
 library(here)
 library(bcgovpond) #to install pak::pak("bcgov/bcgovpond")
 library(janitor)
-library(conflicted)
 library(patchwork)
+library(conflicted)
 library(stringr)
 conflicts_prefer(dplyr::count)
 conflicts_prefer(dplyr::filter)
@@ -218,7 +218,7 @@ noc_specificity <- noc_specificity |>
     TEER = str_sub(noc, 2, 2),
     tertile = ntile(specificity, 3),
     sub_regime = case_when(TEER %in% c(0, 5) ~ 1, #TEER 0 and 5 governed by skills
-                       tertile==3 & TEER %in% c(3,4) ~ 2, #even if highly specific education, TEERS 2,3,4 can move within hierarchy
+                       tertile==3 & TEER %in% c(3,4) ~ 2, #even if highly specific education, TEERS 3,4 can move within hierarchy
                        TRUE ~ tertile #otherwise regime determined by education specificity
                       ),
     sub_regime = factor(

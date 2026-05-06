@@ -8,7 +8,7 @@ bibliography: references.bib
 
 # Project title
 
-**Do Skills or Institutions Shape Occupational Mobility?**
+**Occupational Mobility Regimes: Skills, Institutions, and Destination Gating**
 
 # Project description, rationale, and objectives
 
@@ -38,8 +38,9 @@ This suggests that the relevance of different distance measures may vary systema
 
 In particular:
 
--   Skill-based distance may better explain mobility where skills are transferable and entry barriers are low
--   Hierarchical or institutional distance may better explain mobility where entry is tightly regulated or structured
+-   Skill distance may best rationalize occupational mobility where education specificity is low.
+-   Binary distance may best rationalize (the lack of) occupational mobility when education is highly specific and occupation is TEER 1. 
+-   Hierarchical distance may best rationalize occupational mobility elsewhere.
 
 ## Policy relevance
 
@@ -64,16 +65,18 @@ The primary research questions are:
 
 1.  Which notion of occupational distance best rationalizes observed occupational mobility in Canada?
 2.  Does the explanatory power of different distance measures vary across segments of the labour market?
-3.  To what extent does occupational mobility reflect local reallocation in skill space versus non-local transitions associated with new credentials?
+3.  To what extent does occupational mobility reflect local reallocation versus non-local transitions associated with new credentials?
 
 To address these questions, the project will:
 
 -   Construct transition matrices of occupational mobility using Census 2016-2021 Longitudinal File (CEN_2016_2021)
--   Develop two alternative distance measures:
+-   Develop three alternative distance measures:
     -   a skill-based distance derived from O\*NET descriptors
     -   a hierarchical distance based on the NOC classification
--   Evaluate how well each distance measure explains observed mobility patterns using an entropy-regularized optimal transport framework
--   Examine heterogeneity by segmenting the labour market according to the concentration of educational pathways into occupations
+    -   a binary distance (zero cost to stay, all moves equally costly)
+-   Evaluate how well each distance measure explains observed local mobility (no new highest educational attainment) using an entropy-regularized optimal transport framework
+-   Examine heterogeneity in local mobility by segmenting the labour market according to the concentration of educational pathways into occupations
+-   For non-local mobility (new highest educational attainment), regress distance traveled on Education and Destination specificity (plus origin fixed effects). i.e.  We hypothesize that the more specific the education (in terms of associated occupations) and the more specific the occupation (in terms of associated educational background) the larger the distance traveled will be between 2016 and 2021 occupations. 
 
 # Data requirements
 
@@ -133,7 +136,7 @@ The Census 2016-2021 Longitudinal File (CEN_2016_2021) provides a large sample s
 -   Construct reliable transition matrices at detailed occupational levels
 -   Support statistically reliable analysis of occupational mobility patterns
 
-All outputs will comply with Statistics Canada confidentiality requirements. Results will be released only in non-disclosive form, with appropriate aggregation or suppression applied where necessary.
+All outputs will comply with Statistics Canada confidentiality requirements. Descriptive statistics will be reported at an aggregated level, including sample counts, mobility rates, and summary statistics of occupational transitions and distance measures. All outputs will be disclosure-controlled, with no reporting of small cells or fine-grained transition matrices.
 
 ## Modelling
 
@@ -141,18 +144,17 @@ The analysis uses entropy-regularized optimal transport to model occupational mo
 
 The method:
 
--   Takes observed origin and destination totals as given\
--   Computes a transition matrix that minimizes mobility costs subject to these constraints\
--   Uses a distance matrix to represent the cost of moving betweenen occupations
+-   Takes observed origin and destination totals as given
+-   Computes a transition matrix that minimizes mobility costs subject to these constraints
+-   Uses a distance matrix to represent the cost of moving between occupations
 
 The optimization problem is solved using a standard numerical procedure (Sinkhorn iteration).
 
-Two alternative distance specifications will be evaluated:
+Three alternative distance specifications will be evaluated:
 
--   A model based on skill similarity\
+-   A model based on skill similarity
 -   A model based on hierarchical proximity within the NOC classification
-
-As a baseline, a simple switching-cost specification will also be considered, with zero cost for remaining in the same occupation and a constant positive cost for all occupational changes. This baseline captures the overall tendency to remain in the same occupation but does not impose structure on transitions across occupations.
+-   A model based on binary costs, with zero cost for remaining in the same occupation and a constant positive cost for all occupational changes. 
 
 Model performance will be assessed by comparing how well each specification reproduces the observed transition matrix.
 
@@ -160,7 +162,9 @@ The approach does not involve training or tuning a predictive model and does not
 
 ## Descriptive statistics
 
-Descriptive statistics will summarize the distribution of workers across occupations and key features of occupational mobility, including switching rates, the largest origin–destination flows, and selected summaries of transition patterns. Given the high dimensionality of the full transition matrix, results will focus on salient features (e.g., top transitions and aggregated patterns) rather than exhaustive tabulation. Where possible, publicly available tables will be used to contextualize results. Statistics produced within the RDC will be limited to those required to support the analysis.
+Following SDAC guidelines, the project methodology will focus on modeling, with a minimal focus on descriptive statistics. The amount of descriptive statistics requested for release will be kept to a minimum and will only be released to support the project’s research objectives and provide contextual information (i.e., to describe the sample). Vetting requests for intermediary output will be kept to a minimum, and descriptives will be released near the end of the project in order to minimize residual disclosure issues.
+
+Descriptive statistics will be reported at an aggregated level and will include sample construction and counts (e.g., number of individuals, number of occupational transitions, and shares across local, non-local, and mismeasured partitions), along with high-level mobility rates by education change and broad occupational groupings. The analysis will also report summary statistics of occupational distance measures (e.g., distributions of distances and comparisons across partitions), as well as aggregated transition patterns using coarse occupational groupings. Additional diagnostics will summarize the composition of partitions and the structure of the occupational mapping (e.g., prevalence of one-to-one, many-to-one, and one-to-many mappings). All reported statistics will be sufficiently aggregated to ensure disclosure control and will not include small cell counts or fine-grained transition matrices.
 
 # External Data
 
@@ -179,7 +183,7 @@ The analysis will be conducted using:
 Packages expected to be used include:
 
 -   data manipulation and analysis tools: [tidyverse](https://tidyverse.org/)
--   numerical computation tools: [safesink](https://github.com/bcgov/safesink)
+-   numerical computation tools: [safesink](https://github.com/bcgov/safesink), [matrixStats](https://cran.r-project.org/web/packages/matrixStats/index.html)
 
 No specialized or non-standard software requiring additional approval is expected.
 
@@ -196,7 +200,7 @@ The results may also inform internal policy analysis related to labour market ad
 # Expected start date and duration of the project
 
 -   Start date: ASAP
--   Duration: Approximately 6–12 months
+-   Duration: 12 months
 
 # Source(s) of funding for this project
 

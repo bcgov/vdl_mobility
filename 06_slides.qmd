@@ -29,7 +29,7 @@ hier_dist<- read_rds(here("out", "hier_dist.rds"))
 dist_cdfs<- read_rds(here("out", "dist_cdfs.rds"))
 noc_specificity<- read_rds(here("out", "noc_specificity.rds"))
 educ_specificity<- read_rds(here("out", "educ_specificity.rds"))
-sim_plots<- read_rds(here("out", "sim_plots.rds"))
+sim_kl_plots<- read_rds(here("out", "sim_kl_plots.rds"))
 k_vs_spearman <- read_rds(here("out", "k_vs_spearman.rds"))
 
 skills_hc  <- hclust(as.dist(skill_dist_raw), method = "average")
@@ -356,20 +356,25 @@ $$
 
 ## 
 
-::: column-screen
+::::: columns
+::: {.column width="70%"}
+
 ```{r}
-#| fig-width: 15
-#| fig-height: 4
 #| out-width: 100%
- sim_plots$global_kl_plots
+#| out-height: 100%
+#| fig-height: 8
+ sim_kl_plots$global_kl_rel+
+    theme(text=element_text(size=16))
 ```
 
-- At low $\varepsilon$ the model puts too much weight on cost minimizing moves,
-and too little weight elsewhere: "false negatives" are heavily penalized by KL.
-- The binary cost matrix is more agnostic regarding moves, makes fewer false negative mistakes at low temperatures.
+:::
+::: {.column width="30%"}
+
+- As $\varepsilon \rightarrow 0$ the solution is too sharp: "false negatives" are heavily penalized.
+- Best fit occurs when temperature is higher than its true value (1).
 
 :::
-
+:::::
 
 ## Specificity Tertiles
 
@@ -414,8 +419,9 @@ p
 #| fig-height: 8
 #| out-width: 100%
 
-sim_plots$dest_gate_kl_plot+
-  labs(x = "Temperature (\u03b5)")
+sim_kl_plots$dest_gate_kl_plot+
+  labs(x = "Temperature (\u03b5)")+
+    theme(text=element_text(size=16))
 ```
 
 :::
