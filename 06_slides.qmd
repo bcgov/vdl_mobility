@@ -27,9 +27,8 @@ binary_dist<- read_rds(here("out", "binary_dist.rds"))
 skill_dist<- read_rds(here("out", "skill_dist.rds"))
 hier_dist<- read_rds(here("out", "hier_dist.rds"))
 dist_cdfs<- read_rds(here("out", "dist_cdfs.rds"))
-noc_specificity<- read_rds(here("out", "noc_specificity.rds"))
-educ_specificity<- read_rds(here("out", "educ_specificity.rds"))
-sim_kl_plots<- read_rds(here("out", "sim_kl_plots.rds"))
+noc_edu_spec <- read_rds(here("out", "noc_edu_spec.rds"))
+sim_score_plots<- read_rds(here("out", "sim_score_plots.rds"))
 k_vs_spearman <- read_rds(here("out", "k_vs_spearman.rds"))
 
 skills_hc  <- hclust(as.dist(skill_dist_raw), method = "average")
@@ -37,7 +36,7 @@ skills_ord <- skills_hc$order
 skills_raw_ord <- skill_dist_raw[skills_ord, skills_ord]
 skills_xlab <- as.character(colnames(skills_raw_ord))
 skills_ylab <- as.character(rownames(skills_raw_ord))
-dest_plt <- noc_specificity|>
+dest_plt <- noc_edu_spec|>
   ggplot(aes(T, specificity, text=noc, fill=sub_regime)) +
   scale_fill_viridis_d()+
   geom_point(shape=21, size=3, stroke=.5) +
@@ -342,8 +341,9 @@ We then estimate using:
 
 ## Evaluating the Horse Race
 
-- **KL divergence:** how poorly the model predicts outcomes that occur.  
-- We measure fit using **relative KL improvement (vs. independence)**
+- Geometry aware: Cost-Weighted Total Variation Distance (CWTVD)
+- Geometry unaware: Kullback-Leibler (KL) divergence
+- Normalized relative to independence. e.g.
 
 $$
 \frac{KL(P \parallel P^{\text{ind}}) - KL(P \parallel \hat P)}{KL(P \parallel P^{\text{ind}})}
@@ -356,25 +356,16 @@ $$
 
 ## 
 
-::::: columns
-::: {.column width="70%"}
-
 ```{r}
 #| out-width: 100%
 #| out-height: 100%
-#| fig-height: 8
- sim_kl_plots$global_kl_rel+
-    theme(text=element_text(size=16))
+#| fig-height: 5
+ sim_score_plots$global_measures+
+    theme(text=element_text(size=11))
 ```
 
-:::
-::: {.column width="30%"}
 
-- As $\varepsilon \rightarrow 0$ the solution is too sharp: "false negatives" are heavily penalized.
-- Best fit occurs when temperature is higher than its true value (1).
-
-:::
-:::::
+- The measures work when they should, and fail when they should not
 
 ## Specificity Tertiles
 
@@ -418,8 +409,7 @@ p
 #| fig-width: 15
 #| fig-height: 8
 #| out-width: 100%
-
-sim_kl_plots$dest_gate_kl_plot+
+sim_score_plots$sub_regime_measures+
   labs(x = "Temperature (\u03b5)")+
     theme(text=element_text(size=16))
 ```

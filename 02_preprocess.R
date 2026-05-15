@@ -173,7 +173,7 @@ dist_cdfs <- raw+normalized+
   plot_layout(guides = "collect")
 
 
-#destination gating----------------------------------
+#occupation's education specificity----------------------------------
 
 cip_noc <- bcgovpond::read_view("9810040401.csv") |>
   select(highest = starts_with("Highest"),
@@ -186,23 +186,22 @@ cip_noc <- bcgovpond::read_view("9810040401.csv") |>
          )|>
   inner_join(mapped_nocs, by = c("noc"="noc_plus_title"))
 
-
 #education proportions (aggregation across nocs)
-dest_p0 <- cip_noc |>
+ed_props <- cip_noc |>
   summarise(total = sum(value), .by = c(highest, cip)) |>
   mutate(p0 = total / sum(total)) |>
   select(cip, highest, p0) |>
   unite(education, highest, cip, sep=": ")|>
   tibble::deframe()
 
-noc_specificity <- cip_noc |>
-  filter(value > 0) |> #no zeros anyways, but just incase
+noc_edu_spec <- cip_noc |>
+  filter(value > 0) |> #no zeros anyways, but just in case
   add_count(noc, wt = value, name = "T")|> # noc total across educations
   mutate(
     p  = value / T, #probability of education conditional on noc
     education = paste(highest, cip, sep = ": "), #create variable education out of level and cip
-    dest_p0 = dest_p0[education], # the unconditional probability of education
-    kl_contribution = p * log(p / dest_p0) #the education's contribution to the distinctness of this occupation's education mix.
+    ed_props = ed_props[education], # the unconditional probability of education
+    kl_contribution = p * log(p / ed_props) #the education's contribution to the distinctness of this occupation's education mix.
   )|>
   summarise(
     KL = sum(kl_contribution),
@@ -210,11 +209,11 @@ noc_specificity <- cip_noc |>
     .by = noc
   )
 
-dest_fit_kl <- lm(log(KL) ~ log(T), data = noc_specificity)
+noc_edu_spec_fit <- lm(log(KL) ~ log(T), data = noc_edu_spec)
 
-noc_specificity <- noc_specificity |>
+noc_edu_spec <- noc_edu_spec |>
   mutate(
-    specificity = log(KL) - predict(dest_fit_kl),
+    specificity = log(KL) - predict(noc_edu_spec_fit),
     TEER = str_sub(noc, 2, 2),
     tertile = ntile(specificity, 3),
     sub_regime = case_when(TEER %in% c(0, 5) ~ 1, #TEER 0 and 5 governed by skills
@@ -227,21 +226,21 @@ noc_specificity <- noc_specificity |>
     )
   )
 
-#education specificity
+#education's occupation specificity----------------------
 
-spec_p0 <- cip_noc |>
+noc_props <- cip_noc |>
   summarise(total = sum(value), .by = noc) |>
   mutate(p0 = total / sum(total)) |>
   select(noc, p0) |>
   tibble::deframe()
 
-educ_specificity <- cip_noc |>
+edu_noc_spec <- cip_noc |>
   filter(value > 0) |>
   add_count(highest, cip, wt = value, name = "T") |>
   mutate(
     p  = value / T,
-    spec_p0 = spec_p0[noc],
-    kl_part = p * log(p / spec_p0)
+    noc_props = noc_props[noc],
+    kl_part = p * log(p / noc_props)
   ) |>
   summarise(
     KL = sum(kl_part),
@@ -249,9 +248,9 @@ educ_specificity <- cip_noc |>
     .by = c(highest, cip)
   )
 
-spec_fit_kl <- lm(log(KL) ~ log(T), data = educ_specificity)
+spec_fit_kl <- lm(log(KL) ~ log(T), data = edu_noc_spec)
 
-educ_specificity <- educ_specificity |>
+edu_noc_spec <- edu_noc_spec |>
   mutate(
     specificity = log(KL) - predict(spec_fit_kl)
   ) |>
@@ -293,7 +292,6 @@ educ_specificity <- educ_specificity |>
     ordered = TRUE
   ))
 
-
 write_rds(skill_dist_raw, here("out", "skill_dist_raw.rds"))
 write_rds(k_vs_spearman, here("out", "k_vs_spearman.rds"))
 write_rds(hier_dist_raw, here("out", "hier_dist_raw.rds"))
@@ -301,9 +299,9 @@ write_rds(binary_dist, here("out", "binary_dist.rds"))
 write_rds(skill_dist, here("out", "skill_dist.rds"))
 write_rds(hier_dist, here("out", "hier_dist.rds"))
 write_rds(dist_cdfs, here("out", "dist_cdfs.rds"))
-write_rds(noc_specificity, here("out", "noc_specificity.rds"))
-write_rds(educ_specificity, here("out", "educ_specificity.rds"))
-
+write_rds(noc_edu_spec, here("out", "noc_edu_spec.rds"))
+write_rds(edu_noc_spec, here("out", "edu_noc_spec.rds"))
+write_rds(calibration,  here("out", "calibration.rds"))
 
 
 

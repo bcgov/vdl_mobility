@@ -211,6 +211,9 @@ get_idx <- function(C, sub_regime_vec, label) {
   aligned == label
 }
 
-
+subset_score_dist <- function(a){
+  keep_rows <- names(a)
+  score_dist[keep_rows,]
+}
 
 

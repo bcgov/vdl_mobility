@@ -1,225 +1,871 @@
 ---
-title: "Occupational Mobility Regimes: Skills, Institutions, and Destination Gating"
+title: "Occupational Mobility Is Not One Thing: Evidence from the Canadian Labour Market" 
 author: "Richard Martin"
 format:
   pdf:
     documentclass: article
-    toc: true
     number-sections: true
     geometry: margin=1in
 bibliography: references.bib
 header-includes:
   - \usepackage{amsmath}
   - \usepackage{amssymb}
+  - \usepackage{booktabs}
+  - \usepackage{float}
   - \DeclareMathOperator*{\argmin}{argmin}
+editor: 
+  markdown: 
+    wrap: 72
 ---
+
+```{r, include=FALSE}
+library(tidyverse)
+library(here)
+library(knitr)
+library(kableExtra)
+library(patchwork)
+library(conflicted)
+cdfs <- read_rds("out/dist_cdfs.rds")
+calibration <- read_rds(here("out", "calibration.rds"))
+```
+
+## Pre-registration Notice
+
+This paper is posted as a pre-registration prior to data access. Anything that looks like a result should be interpreted as a prior. This pre-registration of design is intended to defend against potential claims of post-hoc rationalization. The final paper will be posted upon completion of analysis.
 
 ## Abstract
 
-Workers differ markedly in their ability to move across occupations, yet the mechanisms governing this heterogeneity remain poorly understood. This paper identifies occupational mobility regimes — segments of the labour market where distinct cost structures govern transitions — by separating local mobility, where workers move without acquiring new education, from non-local mobility, where new educational attainment enables discontinuous jumps across occupational space. For local mobility, we apply entropy-regularized optimal transport to linked Canadian census microdata from 2016 to 2021, conducting a horse race among competing cost structures — skill similarity, institutional hierarchy, and binary switching costs — using KL divergence from empirical transition distributions as the evaluation criterion. We introduce destination gating, a measure of the concentration of an occupation's educational entry pipeline relative to the workforce baseline, and show that the cost structure governing local mobility varies systematically with destination gating. Highly gated regulated professions exhibit near-binary mobility constraints, intermediate gating occupations follow hierarchical career ladder logic, and low gating occupations are governed primarily by skill transferability. For non-local mobility, we show that observed transition distances reflect the specificity of the educational credential acquired and the gating of the destination occupation. These findings suggest that labour market adjustment to occupational demand shocks depends critically on the segment affected, with implications for the design of training and reskilling policy.
-
+Workers predominantly move between proximate occupations, but proximity means different things in different parts of the labour market. Using entropic regularized optimal transport to conduct a horse race among three distance metrics — skill, hierarchy, and binary — we show that no single geometry governs occupational mobility. Instead, mobility is organized into three sub-regimes defined by education specificity: skill distance governs low-specificity occupations where skills are broadly transferable, hierarchical distance governs mid-specificity occupations where credential ladders structure mobility, and binary switching costs govern high-specificity occupations where human capital is so specific it is virtually useless elsewhere. Each regime implies a distinct policy lever for addressing labour shortages.
 
 ## Introduction
 
-- Labour markets continually reallocate workers in response to technological change, policy, and shocks
-- Entry and exit absorb part of the adjustment, but some workers must transition across occupations
-- Some transitions are harder than others — but what determines difficulty?
-- Workers tend to move between similar occupations [Gathmann & Schönberg 2010]; transition probability declines with occupational distance
-- Central question: **which notion of occupational distance best rationalizes local mobility?**
-- We distinguish two mobility regimes: local (no new educational attainment) and non-local (new attainment acquired)
-- For local mobility, we conduct a horse race across three cost structures using entropy-regularized optimal transport (EROT)
-- For non-local mobility, we examine how education specificity and destination gating jointly determine the distance of jumps
-- Preview of findings [PLACEHOLDER]
-- Policy implication: labour shortages in different segments require different adjustment mechanisms
+Occupational mobility is not one thing. Workers tend to move between proximate occupations, but proximity is not self-evident: occupations differ along multiple dimensions simultaneously — the skills they require, their position in a credential hierarchy, and the degree to which they selectively admit workers with particular credentials. Each implies a different geometry of the labour market, and different predictions about who moves where. We test which geometry governs mobility — and find that the answer depends on where in the labour market you look.
+
+We separate local mobility — transitions that occur without new educational attainment — from non-local mobility — transitions that occur when a new highest educational attainment is achieved. For local mobility, distance is the explanatory variable: we ask which of three candidate metrics (skill, hierarchy, and binary) best rationalizes observed occupational transitions. For non-local mobility, the role of distance is reversed: rather than asking which metric explains where workers go, we ask what determines how far they travel, treating transition distance as the outcome and measures of education and occupation specificity as its determinants.
+
+We anticipate that no single metric will dominate globally. A labour market in which 
+workers in highly credentialed professional occupations, managerial roles, and general 
+labour all follow the same distance geometry would be surprising. To that end, we 
+construct a measure of education specificity --- using KL divergence to capture how 
+different an occupation's education distribution is from that of the labour market as 
+a whole --- and split 504\footnote{The NOC 2021 contains 516 unit groups; 12 are excluded due to 
+data issues and are discussed in Section~\ref{sec-data}.} occupations defined by Canada's National Occupational Classification (NOC) into three sub-regimes. The Horizontal sub-regime (low 
+specificity) is hypothesized to be governed by skill distance: skills are generic and 
+mobility is not constrained by hierarchical structure. The Vertical sub-regime (middle 
+specificity) is hypothesized to be governed by hierarchical distance: skills are 
+specific enough that credential ladder structure binds, with mobility flowing within 
+labour market silos defined by the NOC broad group. The Minimal sub-regime (high 
+specificity) is hypothesized to be governed by binary switching costs: human capital 
+is so occupation-specific that the continuous distance structure of the other metrics 
+is counterproductive, and mobility is better described as either staying or leaving.
+
+The policy relevance is direct. Labour shortages in different segments of the market require different adjustment mechanisms, and the right mechanism depends on which distance metric governs mobility in that sub-regime. Shortages in Horizontal occupations may be addressed through reskilling that builds on transferable skills. Shortages in Vertical occupations are best addressed by increasing supply at the bottom rung of the relevant ladder, allowing upward movement through the credential hierarchy to relieve pressure at higher levels. Shortages in Minimal occupations, where the credential gate is narrow and mobility is structurally low, require supply-side interventions at the point of credential formation. Getting the geometry right is therefore not merely a methodological contribution — it determines which policy lever to pull.
+
+For local mobility, we use entropic regularized optimal transport (EROT) to conduct the horse race. Gravity models are ill-suited to this purpose: origin and destination fixed effects absorb misspecification of the cost matrix so effectively that little structure is left to discriminate. EROT resolves this by holding the marginal structure fixed at observed values, separating the question of how much mobility occurs — determined by the margins — from the question of where mobility flows — shaped by the cost matrix. 
+
+We evaluate fit using two complementary measures: relative KL divergence, which captures whether the predicted transition matrix assigns appropriate probability mass to observed transitions; and relative Cost-Weighted Total Variation Distance (CWTVD), which complements this by weighting misallocated mass by a neutral cost matrix so that errors involving geometrically distant pairs are penalized more heavily than errors involving nearby ones. A model that scores well on both has correctly allocated mass and allocated it to the right part of occupational space.
+
+[FINDINGS PLACEHOLDER]
 
 ## Conceptual Framework
 
-### Local vs Non-local Mobility
+The central structural choice in this paper is the partition of occupational transitions into two qualitatively distinct regimes. A local transition occurs when a worker changes occupation without acquiring new educational attainment — the worker's highest credential in 2021 is the same as in 2016. A non-local transition occurs when a worker's highest educational attainment increases between the two census years. This partition reflects a fundamental difference in the mechanism governing mobility: for local transitions, human capital is fixed and distance governs destination choice; for non-local transitions, credential acquisition shifts the worker's position in occupational space, rendering distance secondary.
 
-- Define local mobility: transitions with no change in highest educational attainment; governed by distance costs
-- Define non-local mobility: transitions accompanied by new educational attainment; "wormhole" jumps across occupational space
-- The local/non-local partition is the paper's central structural choice — motivate it carefully here
-- Non-local transitions are **enabled, not costless**: observed distance reflects education specificity and destination gating
+Two symmetric specificity measures play central roles in the analysis, one defined over occupations and one over credentials. Both are constructed as KL divergences of a conditional distribution from the relevant marginal, residualized on log cell size to remove a mechanical floor at low counts, and derived from the 2021 Census CIP/NOC table — a one-quarter sample of the Canadian population, of which at most one-sixteenth overlaps with the linked microdata used for estimation.
 
-###  Destination Gating
+Occupation's education specificity is the KL divergence of $P(\text{education}|\text{NOC})$ from $P(\text{education})$, where education is defined as the cross product of CIP field of study and highest attainment level. A higher value indicates that the occupation draws from a more distinctive subset of the credential space than a randomly drawn worker would. Because the empirical education distribution can only place mass on a limited number of credentials at low occupation size, raw KL divergence has a mechanical floor; we therefore residualize $\log(\text{KL})$ on $\log(\text{occupation size})$ and define specificity as the residual. In the local partition this measure enters as a classifier defining the three sub-regimes; in the non-local partition it enters without modification as a continuous regressor for credential-driven distance traveled.
 
-- Some occupations draw from very specific educational pipelines
-- Pipeline concentration measured via KL divergence of occupation's educational distribution from workforce baseline
-- Size-residualized to remove mechanical relationship with occupation size
-- Destination gating is an implicit structural feature of the occupational landscape (contrast with explicit gating via occupational licensing [Kleiner & Krueger])
+Education's occupation specificity is the KL divergence of $P(\text{NOC}|\text{education})$ from $P(\text{NOC})$, with the same residualization on log cell size applied. A higher value indicates that holders of a given credential are more concentrated in a distinctive subset of occupational space than a randomly drawn worker would be. This measure enters only the non-local partition, as a continuous regressor capturing the degree to which a credential points holders toward particular destination occupations.
 
-### Why EROT?
+Occupations are assigned to sub-regimes based on education specificity tertile, subject to two TEER override rules. The Horizontal sub-regime includes occupations with bottom tertile education specificity, expanded to include all TEER 0 (senior management) and TEER 5 (labour) occupations regardless of specificity tertile, reflecting that these occupations are structurally unconstrained by credential hierarchies. The Vertical sub-regime includes occupations with middle tertile education specificity, expanded to include TEER 3 and 4 occupations from the top tertile, reflecting that mid-TEER occupations retain upward mobility within their silo. The Minimal sub-regime includes the remaining top tertile occupations — those with both high education specificity and sufficiently high TEER that the credential gate is binding.
 
-- Gravity model (Anderson & van Wincoop 2003; Silva & Tenreyro 2006) estimates origin/destination fixed effects jointly with costs — fixed effects can induce fit even with the wrong cost matrix
-- EROT holds marginal structure fixed and evaluates cost models conditional on observed margins
-- Allows cost structures to be compared in a clean horse race, holding mobility rates fixed
-- Logit / random utility interpretation: ε scales idiosyncratic utility shocks; only relative cost differences (scaled by ε) shape mobility
+The local/non-local partition has a natural falsification structure. If the partition is meaningful, distance metrics should improve on the independence baseline within the local regime but not when applied out of regime to non-local transitions — where credential acquisition, not distance, is doing the explanatory work. Conversely, the specificity interaction should predict distance within the non-local regime but fail to do so out of regime, where human capital is fixed and distance governs. Each model is tested both where it should work and where it should not, and the partition's validity rests on finding the predicted double dissociation.
+
+Occupational licensing represents an explicit form of credential selectivity (Kleiner and Krueger 2013), but selectivity also operates implicitly through the education mix that an occupation draws from in equilibrium. Occupation's education specificity captures this implicit structural feature directly from the data, without relying on curated lists of regulated occupations that are incomplete, jurisdiction-specific, and require manual updating.
+
+The natural alternative to EROT for evaluating occupational mobility costs is the gravity model [@anderson_vanwincoop_2003; @silva2006log], which estimates origin and destination fixed effects jointly with a cost parameter. This joint estimation is precisely the problem in our context: fixed effects absorb variation in mobility rates that may reflect true cost structure, allowing a misspecified cost matrix to achieve good fit by compensating through the fixed effects. Using a gravity model would be akin to amputating a leg of each horse prior to the race. EROT resolves this by holding the marginal structure fixed at observed values, separating the question of how much mobility occurs from the question of where mobility flows. 
+
+EROT shares the interior structure of a multinomial logit over destination occupations: 
+conditional on origin, the probability of transitioning to destination $j$ is proportional 
+to $e^{-C_{ij}/\varepsilon}$, as in a logit model where utility is defined as negative 
+distance plus idiosyncratic taste shocks scaled by $\varepsilon$. The analogy is 
+instructive but inexact: EROT enforces hard constraints on both margins, so the scaling 
+vectors $u_i$ and $v_j$ are equilibrium objects rather than free parameters; and because 
+the margins cannot adjust to absorb cost misspecification, a poorly chosen cost matrix 
+has nowhere to hide. Reporting results across a grid of $\varepsilon$ values characterizes 
+how sensitive the horse race outcome is to the assumed degree of idiosyncratic 
+heterogeneity in mobility decisions. EROT is described in detail in 
+Section \ref{sec-local}.
 
 ## Cost Metrics
 
-### Skill Distance
+The skill distance matrix $C_{\text{skill}}$ is constructed from 161 O\*NET
+measures spanning skills, abilities, knowledge, and work activities,
+mapped to NOC 2021 occupations via a purpose-built crosswalk. Each NOC
+is represented as a weighted average of its constituent O\*NET
+occupations, with weights determined by the crosswalk mapping.
 
-- Based on 161 O\*NET skills, abilities, knowledge, and work activities measures mapped to NOC 2021
-- Dimensionality reduced via PCA: first 12 principal components achieve ≥0.99 rank preservation of pairwise distances
-- Note on OaSIS: falsifiability requires observing where measurement error enters; OaSIS obscures that structure
+O\*NET provides two scales for each measure: Importance (how important
+the attribute is to the occupation) and Level (the degree to which the
+attribute is required). Both scales are standardized to a common 0--10
+range and combined via geometric mean, yielding a single score that
+reflects both the relevance and the intensity of each attribute. The
+geometric mean is preferred over the arithmetic mean as it penalizes
+cases where one scale is near zero — an attribute that is important but
+required at negligible level, or required at high level but deemed
+unimportant, receives a lower composite score than one scoring
+moderately on both dimensions. The two scales are highly correlated in
+practice, so this choice is unlikely to be consequential for the
+resulting distance matrix, but we note it for transparency.
 
-###  Hierarchical Distance
+Raw O\*NET measures are standardized prior to dimensionality reduction.
+Principal components analysis is applied to the 161-dimensional skill
+profiles, and the number of components retained is determined
+empirically: we identify the minimum k such that the Spearman rank
+correlation between pairwise distances in the k-dimensional PCA space
+and pairwise distances in the full 161-dimensional space exceeds 0.99.
+This criterion — rank preservation of pairwise distances rather than
+variance explained — is chosen because the object of interest is the
+distance matrix itself, not the underlying skill dimensions. Twelve
+principal components satisfy this criterion.
 
-- Derived from the NOC taxonomy
-- Distance = 0 if all five digits match; distance = 1 if first four match; distance = 2 if first three match; distance = 3 + |ΔTEER| if first digit matches; distance = 9 otherwise
-- Captures institutional classification structure rather than skill content
+The skill distance between any two occupations is then the Euclidean
+distance between their coordinates in the retained 12-dimensional PCA
+space. The resulting skill distance matrix is visualized as an
+interactive heatmap in the online companion, allowing inspection of
+pairwise distances across the full set of NOC 2021 occupations.
 
-###  Binary Switching Cost
+A note on the crosswalk is warranted. An alternative approach would be
+to use OaSIS, the official O\*NET to NOC mapping. We construct our own
+crosswalk for a specific reason: falsifiability. The horse race requires
+that measurement error in the skill distance matrix be attributable to a
+known source — namely, imprecision in the O\*NET to NOC mapping. OaSIS
+obscures the structure of that mapping, making it impossible to
+characterize where and how measurement error enters $C_{\text{skill}}$.
+Our crosswalk makes this structure transparent and therefore makes the
+identification strategy falsifiable. The crosswalk is publicly available
+at [ONET NOC 2021 crosswalk](https://github.com/bcgov/onet-noc2021-crosswalk).
 
-- Degenerate distance: stay vs. move only
-- Serves as a baseline and is informative about highly gated destinations where local movement is constrained
+The hierarchical distance matrix $C_{\text{hier}}$ is derived directly
+from the NOC 2021 taxonomy, treating the occupational classification
+structure as a tree metric. Distance between any two occupations is
+defined as follows: zero if all five digits match (same unit group); one
+if the first four digits match (same minor group, different unit group);
+two if the first three digits match (same sub-major group, different
+minor group); three plus the absolute difference in TEER level if only
+the first digit matches (same broad occupational category, different
+sub-major group); and nine for any cross-category transition. The
+absolute TEER difference ranges from zero to five, so within-category
+distances range from three to eight, preserving a strict separation from
+the cross-category sentinel value of nine.
 
-###  Relationship Between Metrics
+Intuitively, the hierarchical view of the labour market is that it is comprised of ten largely separate silos, each containing up to six platforms corresponding to TEER levels. Each platform has internal geography --- occupations within the same silo and platform are at distances of one, two, or three depending on how closely related they are within the NOC hierarchy. Moving between platforms always costs more than any within-platform move: inter-platform distances start at four and increase with the number of platforms traversed, up to eight. Moving between silos always costs more than any within-silo move: cross-silo transitions are assigned a sentinel value of nine, the minimum integer exceeding the maximum within-silo distance of eight. The hierarchical distance matrix is visualized as an interactive heatmap 
+in the online appendix, allowing inspection of pairwise distances across 
+all NOC 2021 occupations.
 
-- Skill and hierarchical distances are similar but distinct [figure]
-- Both are needed: each captures a different dimension of occupational proximity
+The binary switching cost matrix $C_{\text{binary}}$ assigns a cost of
+zero to remaining in the same occupation and one to any transition,
+presuming that any movement is extremely costly relative to staying. It
+is a limiting case, even more extreme than the hierarchical distance ---
+topologically, the labour market is comprised of 504 largely separate 
+silos, with no internal structure of any kind. Any movement is equally 
+costly regardless of destination.
 
+$C_{\text{binary}}$ serves two roles in the analysis. First, it is the
+theoretical straw man in the horse race: if occupational mobility costs
+are purely a function of whether a switch occurs rather than how far,
+then $C_{\text{binary}}$ should rationalize observed mobility patterns as
+well as or better than $C_{\text{skill}}$ or $C_{\text{hier}}$. Second,
+and more subtly, $C_{\text{binary}}$ is best suited to settings where
+mobility is limited — where most workers remain in their origin
+occupation. In such settings, the information contained in a richer cost
+structure can cause model fit to worsen. Finding that $C_{\text{binary}}$
+outperforms richer cost matrices in a particular sub-regime would
+therefore be informative in its own right, suggesting that mobility in
+that segment is too limited for cost structure to be identified from the
+data.
 
+## Normalization
 
-## Data
+The three cost matrices are defined on different scales by construction:
+skill distances are continuous and spread over a wide range, hierarchical
+distances are discrete with a sentinel value of nine reserved for
+cross-category transitions, and binary distances take only the values
+zero and one. Direct comparison in the horse race requires that the
+matrices be anchored to a common scale; without normalization, EROT would
+mechanically favour the matrix with the lowest typical pairwise
+distances, regardless of descriptive accuracy.
 
-### Census 2016–2021 Longitudinal File
+We normalize skill and hierarchical distances to a common scale using a
+quantile-matching approach, with binary serving as the reference. The
+normalization proceeds as follows. Cross-category sentinel values of nine
+are excluded from the hierarchical distribution, as they represent a
+qualitatively distinct mobility regime rather than a point on the
+continuous within-category distance scale. The conditional median of the
+remaining hierarchical distances is four. We then locate four in the
+unconditional hierarchical distribution — including the sentinel values —
+which falls at the eighth percentile, reflecting the dominance of
+cross-category pairs in the full pairwise distribution. Finally, we
+locate the eighth percentile of the skill distance distribution, which is
+8.59. Hierarchical distances are divided by four and skill distances by
+8.59, anchoring both matrices at the same quantile of their respective
+unconditional distributions.
 
-- Both censuses linked via the central Derived Record Depository (DRD)
-- Probabilistic linkage using name, sex, date of birth, phone, postal code
-- High linkage quality but not perfect — population estimates would be biased, but this is not the objective
-- Robustness is to selection only if sample systematically favours one distance metric
+```{r}
+#| warning: false
+#| echo: false
+#| label: fig-cdfs
+#| fig-cap: "Raw vs. Normalized CDFs"
+cdfs
+```
 
-### Sample Construction
+@fig-cdfs shows the empirical CDFs of all three matrices before
+and after normalization. The raw distributions differ substantially in
+scale and shape; after normalization, skill and hierarchical CDFs overlap
+closely over the range of distances relevant to observed mobility,
+diverging only in the right tail. The sensitivity of horse race results
+to the normalization anchor is examined in @sec-AC
 
-**Core sample:** observations with reliable measurement [sample size PLACEHOLDER]
+## Data {#sec-data}
 
-**Robustness / falsification samples (measurement challenges):**
+The analysis uses the Census 2016--2021 longitudinal file, constructed by linking 
+long-form respondents across the two census cycles via the Derived Record Depository
+(DRD), Statistics Canada's national longitudinal database  of personal identifiers. 
+Linkage is probabilistic; details of the matching keys and overall linkage rate will 
+be verified upon data access and reported in the final paper.
 
-*Occupation mismeasurement:*
-- Self-employed in either period
-- 2016 TEER–highest attainment mismatch (observed occupation inconsistent with educational attainment)
+The incomplete linkage introduces a potential selection concern distinct
+from the observability selection discussed below. If unlinked individuals
+are disproportionately concentrated in a part of occupational space where
+one cost matrix has a strong prior advantage or disadvantage relative to
+the others, the horse race outcome would reflect sample composition
+rather than true metric performance. Unlinked individuals are likely to
+be disproportionately recent immigrants, young workers, and high-movers
+— individuals whose identifying information changed between census
+cycles, reducing match probability. There is no obvious mechanism by
+which these characteristics would differentially concentrate unlinked
+individuals in occupational space in a way that systematically favours
+or penalizes any particular cost matrix. Linkage-based selection is
+therefore unlikely to threaten the internal validity of the horse race,
+though this assumption cannot be directly verified without access to the
+unlinked population.
 
-*Mapping misspecification:*
-- Bottom 10% by Herfindahl × similarity
+The estimation sample is partitioned into subsets that vary in two
+dimensions: whether the local/non-local regime assignment is correct,
+and whether occupation measurement is clean. This design generates a
+natural ordering of expected model fit that serves as an internal
+validation of the partition's theoretical content.
 
-*Joint mismeasurement:*
-- Both sources of noise combined
+The local clean sample is the primary identification sample for the
+horse race, and the falsification sample for the specificity regression.
+It comprises individuals with an observed occupation in both 2016 and
+2021, no increase in highest educational attainment between the two
+census years, no self-employment in 2016, no TEER--attainment mismatch
+in 2016, and an O\*NET-to-NOC mapping quality score above the bottom
+decile. This is the sample where the horse race should work best and
+where the specificity regression should find nothing.
 
-### TEER–Attainment Admissibility Table
+The non-local clean sample comprises individuals who acquire a new
+highest educational attainment between 2016 and 2021 and report an
+observed occupation in both periods, subject to the same measurement
+restrictions: no self-employment in 2016, no TEER--attainment mismatch,
+and an O\*NET-to-NOC mapping quality score above the bottom decile. It
+is the primary estimation sample for the specificity regression, and the
+falsification sample for the horse race. This is the sample where the
+specificity regression should work best and where the horse race should
+find nothing.
 
-[Table as in slides — maps highest attainment to target TEER and admissible TEER range]
+The cross-regime falsification thus runs symmetrically in both
+directions. The non-local clean sample — where credential acquisition
+governs destination choice — serves as a falsification for the horse
+race: EROT should find no improvement over the independence baseline
+here, since distance structure is irrelevant once human capital has
+shifted. The local clean sample — where human capital is fixed — serves
+as the mirror falsification for the specificity regression: credential
+specificity should have no predictive power over distance traveled when
+no new credential has been acquired. Each model is tested both where it
+should work and where it should not, and the partition's validity rests
+on finding the predicted double dissociation.
 
+The mismeasurement diagnostic samples introduce measurement problems one
+at a time, holding regime assignment correct. The occupational
+mismeasurement sample retains individuals whose 2016 occupation is
+likely mismeasured, identified by two criteria: self-employment in 2016,
+where occupation codes are less reliably assigned; and TEER--attainment
+mismatch, where the reported occupation is inconsistent with highest
+educational attainment. Attainment mismatch could easily occur for either recent 
+attainments or for those awaiting credential recognition.\footnote{For details regarding TEER--attainment mismatch criteria, 
+see Appendix B.} Both criteria introduce noise into the origin 
+occupation, and their effects on model fit are expected to be symmetric across 
+cost matrices.
 
-##  Methodology
+The mapping quality sample retains individuals whose 2016 occupation
+falls in the bottom decile of the O\*NET-to-NOC mapping quality
+composite; poor mapping introduces noise specifically into
+$C_{\text{skill}}$ while leaving $C_{\text{hier}}$ unaffected, providing
+a difference-in-differences diagnostic on metric-specific fit
+degradation. Each of these samples is expected to show worse fit than
+the corresponding clean sample, with the mapping quality sample showing
+selective degradation of $C_{\text{skill}}$ relative to $C_{\text{hier}}$.
 
-###  EROT Formulation
+The mismeasurement residual samples comprise all observations not
+assigned to any of the named samples above, split by regime. The local
+mismeasured residual contains individuals in the local regime with
+multiple simultaneous measurement problems — self-employment,
+TEER--attainment mismatch, and/or poor O\*NET-to-NOC mapping in
+combination. The non-local mismeasured residual contains individuals in
+the non-local regime with multiple simultaneous measurement problems.
+Within each regime the source of fit degradation is measurement noise
+rather than regime misassignment, preserving the interpretability of the
+regime axis while acknowledging that the specific contribution of each
+noise source cannot be separately identified. Expected fit is worse than
+the corresponding single-problem diagnostic samples but, crucially,
+better than the out-of-regime clean samples — where the only problem is
+regime misassignment. If that ordering holds, it constitutes direct
+evidence that regime misassignment is more damaging to model fit than
+the accumulation of measurement problems, strengthening the theoretical
+case for the local/non-local partition.
 
-The EROT problem minimizes:
+The local partition is restricted to individuals with an observed
+occupation in both 2016 and 2021, as both endpoints are required to
+compute a transition distance. Non-observability has multiple sources —
+including labour market entry and exit due to age — but these are not
+expected to differentially affect the horse race. The relevant selection
+concern is weak labour force attachment, which can produce a missing
+occupation in either period and is positively related to skill level
+[@statcan_lfs], implying that the excluded population is
+disproportionately drawn from low-skill occupations characterized by
+casual, seasonal, or intermittent employment.
+
+This selection has differential implications for the three cost matrices
+under evaluation. Skill distance is hypothesized to best rationalize
+mobility in occupations where the education specificity of the origin
+occupation is low — a category that encompasses many low-skill
+occupations as well as management occupations. Low-skill workers in
+these occupations are disproportionately excluded from the local
+partition due to weaker labour force attachment. Sample selection bias
+on the basis of occupation observability therefore disproportionately
+disadvantages skill distance in the horse race: many of the observations
+where this metric would be expected to excel are missing from the
+estimation sample.
+
+The non-local partition is restricted to individuals who acquire a new
+credential between 2016 and 2021 and report an occupation in both
+periods. The selection concern here is distinct from the local
+partition: the excluded population is not disproportionately low-skill,
+but rather disproportionately those whose human capital increased the
+most. The most demanding credential programs — medicine, law, dentistry
+— require sufficiently intensive study that concurrent employment is
+largely precluded, meaning students in these programs are less likely to
+report a 2016 occupation and thus excluded from the sample.
+
+This selection mechanism has a specific implication for the non-local
+partition's central empirical question: the relationship between CIP
+program specificity and credential-driven distance traveled. The most
+demanding programs tend to also be the most specific, and the human
+capital increment they confer is large — generating the longest
+credential-driven occupational jumps. Excluding these observations
+therefore truncates the upper tail of the distance distribution
+precisely where CIP specificity is highest. Estimates of the
+relationship between program specificity and distance traveled should
+accordingly be interpreted as lower bounds on the true relationship in
+the full population of credential acquisitions.
+
+## Local Model {#sec-local}
+
+The entropy-regularized optimal transport problem minimizes the
+Lagrangian, where the first term is the transport cost, the second is
+the entropic regularization penalizing deterministic transport plans,
+and the third and fourth enforce the marginal constraints $\sum_j
+P_{ij} = a_i$ and $\sum_i P_{ij} = b_j$ via dual variables $f_i$ and
+$g_j$.
 
 $$\mathcal{L} = \sum_{ij} P_{ij} C_{ij} + \varepsilon \sum_{ij} P_{ij}(\log P_{ij} - 1) + \sum_i f_i(a_i - \sum_j P_{ij}) + \sum_j g_j(b_j - \sum_i P_{ij})$$
 
-subject to marginal constraints: $\sum_j P_{ij} = a_i$ and $\sum_i P_{ij} = b_j$
+where $a_i$ and $b_j$ are the exact occupation stocks in 2016 and 2021
+respectively. The framework is implicitly first-order Markov: the
+margins absorb any factor that operates additively at the level of the
+origin or destination occupation, but not factors that depend on the
+specific origin-destination pair. The cost matrix is itself dyadic ---
+it encodes the hypothesis that the specific pairing matters --- and the
+horse race is asking which specification of dyadic structure best
+captures the non-Markovian residual after the margins have absorbed the
+first-order effects.
 
-First-order conditions yield:
+The first-order conditions yield:
 
 $$\log P_{ij} = \frac{f_i}{\varepsilon} + \frac{g_j}{\varepsilon} - \frac{C_{ij}}{\varepsilon}$$
 
-Exponentiating: $P_{ij} = u_i \, e^{-C_{ij}/\varepsilon} \, v_j$
+Exponentiating, the optimal transport plan takes the form $P^\star_{ij}
+= u_i \, e^{-C_{ij}/\varepsilon} \, v_j$, where $u_i =
+e^{f_i/\varepsilon}$ and $v_j = e^{g_j/\varepsilon}$ are scaling
+vectors. Strict convexity of the regularized objective guarantees a
+unique solution. The solution is therefore a row- and column-rescaling
+of the Gibbs kernel $K_{ij} = e^{-C_{ij}/\varepsilon}$, and the
+Sinkhorn algorithm recovers it by alternating row and column
+normalization until both marginal constraints are satisfied to within a
+specified tolerance. All computations use a log-domain Sinkhorn solver
+for numerical stability, implemented in the \texttt{safesink} R package
+[@safesink].
 
-- Strict convexity → unique solution $P^\star$
-- Solution is a row- and column-rescaling of the kernel $e^{-C_{ij}/\varepsilon}$
-- Sinkhorn algorithm alternates row and column corrections until both margins are satisfied
-- Implemented via log-domain Sinkhorn solver for numerical stability [safesink]
+The regularization parameter $\varepsilon$ has a natural interpretation
+in the random utility framework. The optimal transport plan $P^\star_{ij}
+= u_i \, e^{-C_{ij}/\varepsilon} \, v_j$ is the static equilibrium of a
+discrete choice model in which workers draw idiosyncratic utility shocks
+scaled by $\varepsilon$ over destination occupations. Low values of
+$\varepsilon$ concentrate the transport plan on cost-minimizing
+assignments, approaching a deterministic reallocation in the limit; high
+values diffuse mobility across destinations, approaching the independence
+baseline $P_{ij} = a_i b_j$ as $\varepsilon \to \infty$. The RUM
+analogy governs the interior structure of the transport plan --- how
+probability mass is allocated across origin-destination pairs --- but
+does not extend to the margins. In a standard logit model the choice
+probabilities are outcomes of utility maximization with no constraint on
+their aggregates; in EROT the origin and destination occupation
+distributions are hard constraints that the transport plan must exactly
+reproduce. This distinction is methodologically consequential: because
+the margins cannot adjust to absorb cost misspecification, a poorly
+chosen cost matrix cannot hide behind fixed effects or scale
+recalibration --- its misfit appears directly in the objective.
 
-### Temperature Parameter (ε)
+A critical identification constraint follows directly from the form of
+the optimal transport plan: only the ratio $C_{ij}/\varepsilon$ enters
+$P^\star$. The scale of the cost matrix and the value of $\varepsilon$
+are therefore not separately identified. This means that results
+reported at a single value of $\varepsilon$ are uninterpretable without
+an implicit normalization assumption --- and that assumption can be
+gamed, since any cost matrix can be made to fit well by tuning
+$\varepsilon$ to its scale. A horse race conducted at a single
+temperature is not a horse race; it is a calibration exercise.
 
-- ε scales idiosyncratic utility shocks (logit / RUM interpretation)
-- Low ε → cost-minimizing reallocation; high ε → diffuse mobility (approaches independence $P_{ij} = a_i b_j$)
-- Only relative cost differences scaled by ε shape mobility
-- Results evaluated across a range of ε — no single scale assumed
-- [NOTE: describe epsilon selection via conditional median matching with grid robustness checks here]
+Evaluating across a grid of $\varepsilon$ values sidesteps this by looking for dominance that is robust across scales — a metric that wins at multiple temperatures cannot be attributed to a fortuitous scale alignment. We evaluate across a log-spaced grid of
+$\varepsilon$ values ranging from 0.5 to 2, spanning from relatively
+concentrated to relatively diffuse transport plans while remaining in
+the region where the fit metrics retain discriminating power. The
+criterion for a robust winner requires some care. At low values of
+$\varepsilon$, cost-sensitive matrices concentrate probability mass too
+aggressively relative to observed mobility, incurring an overconfidence
+penalty that mechanically favours the flat binary matrix regardless of
+which metric truly best rationalizes mobility. This low-temperature
+binary lead is therefore uninformative about genuine descriptive
+accuracy and should not be interpreted as evidence that binary is the
+superior metric. The operative criterion is dominance over the full
+epsilon grid after discounting this artefact: a cost matrix is declared
+the winner if it dominates all competitors across the sweep, or
+dominates all non-binary competitors across the sweep while losing to
+binary only at low temperatures where the overconfidence penalty is
+operative. Conversely, when binary genuinely best rationalizes mobility
+--- as in sub-regimes where occupational transitions are not structured
+by continuous distance --- it will dominate not just at low temperatures
+but across the entire grid and by a margin that dwarfs the overconfidence
+effect. The epsilon path thus serves a dual purpose: identifying the
+winning metric and distinguishing genuine binary dominance from penalty
+artefact.
 
-### Evaluation: KL Divergence Horse Race
+The horse race is evaluated using two complementary fit metrics, both
+normalized relative to the independence baseline $P^{\text{ind}}_{ij} =
+a_i b_j$, so that 0 indicates no improvement over independence, 1
+indicates perfect fit, and negative values indicate a transport plan that
+fits observed mobility worse than independence.
 
-- KL divergence measures how poorly the model predicts outcomes that occur
-- Relative KL improvement (vs. independence baseline):
+The first metric is relative KL divergence improvement:
 
-$$\frac{KL(P \parallel P^{\text{ind}}) - KL(P \parallel \hat{P})}{KL(P \parallel P^{\text{ind}})}$$
+$$\Delta KL = \frac{KL(P^{\text{obs}} \parallel P^{\text{ind}}) - KL(P^{\text{obs}} \parallel \hat{P})}{KL(P^{\text{obs}} \parallel P^{\text{ind}})}$$
 
-- 0 → no improvement over independence; 1 → perfect fit; <0 → worse than independence
+where $KL(P \parallel Q) = \sum_{ij} P_{ij} \log(P_{ij} / Q_{ij})$.
+This measures the share of the divergence between observed transitions
+and independence that is explained by the fitted transport plan. KL
+divergence is sensitive to probability mass wherever it is misallocated,
+but is geometry-blind: misallocating mass to a nearby occupation is
+penalized identically to misallocating it to a distant one.
 
-### Destination Gating Measure
+The second metric is relative Cost-Weighted Total Variation Distance
+(CWTVD) improvement [@villani2009optimal; @rubner2000earth]:
 
-Pipeline concentration (KL from workforce baseline):
+$$\Delta CWTVD = \frac{CWTVD(P^{\text{obs}}, P^{\text{ind}}) - CWTVD(P^{\text{obs}}, \hat{P})}{CWTVD(P^{\text{obs}}, P^{\text{ind}})}$$
 
-$$KL(p \parallel p_0) = \sum_k p_k \log\left(\frac{p_k}{p_{0k}}\right)$$
+where $CWTVD(P^{\text{obs}}, \hat{P}) = \sum_{ij}
+\frac{|P^{\text{obs}}_{ij} - \hat{P}_{ij}|}{2} \cdot C_{ij}$. CWTVD
+extends classical total variation distance by weighting absolute
+residuals elementwise by a cost matrix, penalizing probability mass
+misallocated to geometrically distant origin-destination pairs more
+heavily than mass misallocated to nearby ones. Unlike KL divergence,
+CWTVD respects the metric structure of the outcome space; unlike the
+Wasserstein distance, it does not solve an additional optimal transport
+problem over the residual mass, making it computationally trivial given
+an existing transport plan.
 
-Size-residualized specificity:
+The scoring cost matrix $C$ used in CWTVD is the arithmetic mean of the
+three candidate normalized cost matrices: $C_{\text{skill}}$,
+$C_{\text{hier}}$, and $C_{\text{binary}}$. Using a neutral common metric
+ensures that no candidate model is advantaged by the choice of scoring
+matrix. The two metrics are complementary by design: KL divergence
+captures overall probability mass misallocation regardless of geometry,
+while CWTVD captures whether misallocation is concentrated in nearby or
+distant pairs. A transport plan that scores well on both metrics fits
+observed mobility both accurately and geometrically.
 
-$$\text{specificity} = \log(KL) - \hat{E}[\log(KL) \mid \log(T)]$$
+## Non-Local Model
 
-### Non-local Model
+The non-local model estimates the (conditional on positive) relationship
+between credential and occupational specificity and distance traveled
+following a credential acquisition. The estimation sample is restricted
+to those with a positive distance between their 2016 and 2021
+occupations.  The outcome is $\log(d_{ij})$, the log distance between the 2016 and
+2021 occupations, computed separately using skill distance and
+hierarchical distance. Running the regression on both metrics provides a
+check on robustness to the choice of distance measure; the wormhole
+mechanism (credential-driven jumps that allow workers to bypass the normal distance constraints of occupational space) should operate independently of which metric is used to
+measure the jump.
 
-- Outcome: distance of jump (in occupational space)
-- Predictors: CIP–NOC KL specificity measures + origin fixed effects
-  - Education specificity → CIP exit concentration (wormhole entrance)
-  - Destination gating → NOC entry concentration (wormhole exit)
-- Hypotheses: new attainment → distance increases with specificity; no new attainment → no systematic relationship
+The estimating equation is:
 
-### Diagnostic Plots
+$$\log(d_{ij}) = \alpha + \beta \, \text{EOS}_c \times \text{OES}_j + \delta_i + \varepsilon_{ij}$$
 
-- If distance rationalizes mobility, log excess mobility declines linearly with distance
-- If the metric is misspecified, it will not
+where $\text{EOS}_c$ is education's occupation specificity for
+credential $c$ acquired between 2016 and 2021 --- the KL divergence of
+the conditional occupation distribution $P(\text{NOC} | \text{education})$
+from the marginal $P(\text{NOC})$, residualized on log credential cell
+size; $\text{OES}_j$ is occupation's education specificity for the 2021
+destination occupation $j$ --- the KL divergence of the conditional
+education distribution $P(\text{education} | \text{NOC})$ from the
+marginal $P(\text{education})$, residualized on log occupation size; and
+$\delta_i$ are origin occupation fixed effects.
+
+The interaction $\text{EOS}_c \times \text{OES}_j$ enters without main
+effects. This is not an oversight but a theoretical commitment: the
+wormhole mechanism requires both an entrance and an exit simultaneously.
+A specific credential that points holders toward a particular destination
+($\text{EOS}_c$ high) enables a long jump only if the destination
+selectively admits workers with that credential ($\text{OES}_j$ high);
+and a selective destination ($\text{OES}_j$ high) generates a long
+credential-driven jump only if the credential points holders there
+($\text{EOS}_c$ high). Neither condition alone is theoretically predicted
+to increase distance traveled, and including main effects would impose an
+additive structure inconsistent with the wormhole mechanism. The product
+$\text{EOS}_c \times \text{OES}_j$ is the natural sufficient statistic
+for the joint condition.
+
+The two specificity measures are conceptually distinct and can diverge in
+economically meaningful ways. The cleaner case is a credential with high
+$\text{EOS}_c$ and low $\text{OES}_j$: a nursing degree points almost
+all holders toward nursing occupations, but nursing draws from multiple
+credential pathways --- registered nurses, licensed practical nurses,
+nurse practitioners --- so the destination occupation is not highly
+selective with respect to any single credential. The credential has a
+clear destination, but the destination has many entrances. The reverse
+case --- low $\text{EOS}_c$, high $\text{OES}_j$ --- is less intuitively
+obvious but equally important. A general engineering degree prepares
+graduates for a wide range of occupations, so $\text{EOS}_c$ is low. Yet
+if the destination is a highly specialized occupation such as petroleum
+or nuclear engineering, that occupation draws almost exclusively from
+particular technical disciplines, so $\text{OES}_j$ is high. In this
+case the worker reaches a selective destination not because their
+credential pointed them there, but through some other mechanism --- prior
+experience, specialization within a general program, or networks. The
+wormhole was not the route, and the product $\text{EOS}_c \times
+\text{OES}_j$ correctly predicts no long credential-driven jump. The
+interaction-only specification is therefore not merely a response to
+collinearity concerns but a direct operationalization of the theoretical
+mechanism.
+
+Origin occupation fixed effects $\delta_i$ are included to close a
+backdoor path from prior education choices to the specificity measures.
+The 2016 occupation is downstream of the worker's educational trajectory
+prior to the census period, and that trajectory influences both which
+credential is subsequently acquired --- and hence $\text{EOS}_c$ --- and
+the distance traveled. Conditioning on origin occupation absorbs this
+unobserved selection, allowing the specificity measures to identify the
+wormhole mechanism rather than proxying for occupational trajectory.
+
+The non-local model is evaluated primarily by the sign, magnitude, and
+significance of $\beta$, the coefficient on the interaction of
+education's occupation specificity and occupation's education
+specificity. The main hypotheses are: $\beta > 0$ in the non-local clean
+sample, where the wormhole mechanism is operative; and $\beta \approx 0$
+in the local clean falsification sample, where human capital is fixed
+and credential specificity has no purchase on destination choice. The
+$R^2$ of the regression serves as a summary fit measure and is tracked
+across the full sample partition --- non-local clean, mismeasurement
+diagnostics, mismeasured residual, and local clean falsification --- to
+document the degradation in fit as samples depart from the conditions
+under which the model is hypothesized to work. Results are reported for
+both skill and hierarchical distance outcomes.
+
+## Results  \[PLACEHOLDER --- awaiting data\]  {#sec-res}
+
+\[KL and CWTVD improvement figures by cost metric, temperature and
+subsample\]
+
+\[KL and CWTVD improvement by sub regime, cost metric, temperature and
+subsample\]
+
+\[p-values and R squared from regressing log(distance>0) on specificity
+interaction, and origin fixed effects.\]
+
+## Limitations
+
+For local mobility, a notable omitted factor is *path-specific* wage
+differentials. The additively separable component of wage gains ---
+recoverable from origin and destination wage levels alone --- is absorbed
+by the margins insofar as high-wage destinations attract larger inflows,
+and low-wage origins larger outflows. The residual dyadic component,
+reflecting transition-specific wage premia and discounts beyond what
+origin and destination wage levels predict, is an omitted factor.
+Short-distance transitions are within a similar occupational
+neighbourhood, reducing employer uncertainty about candidate fit and
+productivity; long-distance transitions cross larger skill or
+hierarchical gaps, and employers may discount wage offers to compensate
+for that uncertainty, or workers may accept lower wages to gain entry to
+a distant occupation.
+
+The threat to the horse race would require that these residual dyadic
+wage effects are differentially correlated with the competing cost
+matrices --- that they track one metric more closely than the others.
+There is no obvious mechanism by which employer uncertainty would operate
+through skill distance systematically differently than through
+hierarchical distance; the dyadic wage residual story is essentially
+metric-agnostic.
+
+Path-specific wage differentials therefore attenuate the observed
+distance signal but are unlikely to distort the horse race result, which
+depends only on relative fit across metrics rather than absolute fit
+levels. Regardless, incorporating path-specific wage differentials into
+the cost matrix or the estimation is not feasible with the Canadian
+census data: occupation is recorded at the census date, but wages are
+derived from prior-year tax records, and for occupational switchers the
+observed wage reflects the origin occupation rather than the destination.
+
+For non-local mobility, the specificity regression faces an analogous
+but distinct identification challenge. The regression estimates the
+reduced-form relationship between credential and occupational specificity
+--- and their interaction --- and distance traveled following a
+credential acquisition. Both the enablement and motivation channels
+predict a positive relationship between specificity and distance: a
+specific credential opens doors to particular distant occupations that a
+general credential does not (enablement), and specific credentials tend
+to command wage premia at those destinations, making long-distance moves
+financially attractive (motivation). Because both channels operate
+through the same credentials and occupations, the interaction term
+conflates the two. Separating the enablement channel from the motivation
+channel would require either an instrument that shifts wage premia
+without shifting human capital reallocation, or a structural model of
+credential choice and occupational mobility. Neither is feasible with
+the available data. The regression should therefore be interpreted as
+identifying the reduced-form predictive relationship between specificity
+and distance traveled, without attribution to a specific mechanism.
+
+The positive distance restriction removes many apprenticeship completers, since NOC makes no distinction between apprentices and journeypeople of the same occupation — those already working in the target trade in 2016 show zero measured distance upon completion and are excluded by construction. Workers who complete an entire apprenticeship program within the five-year window from a different 2016 occupation remain in the sample, so apprenticeship programs are underrepresented rather than absent. The direction of bias from this underrepresentation is ambiguous and operates through several channels.
+
+Red seal trades credentials are likely high on both $\text{EOS}_c$ and
+$\text{OES}_j$: completers are concentrated in the target trade
+occupation (pushing $\text{EOS}_c$ up), and red seal trades occupations
+draw almost exclusively from their own credential (pushing $\text{OES}_j$
+up). This suggests that the excluded zeros are high on the interaction
+term, and their exclusion is conservative with respect to the main
+hypothesis --- including them would strengthen rather than weaken the
+predicted positive relationship between the interaction and distance
+traveled, for those who do show a positive distance.
+
+However, a countervailing consideration tempers this optimism. The
+technical similarity between trades occupations in O\*NET skill space
+means that even apprenticeship completers who do show a positive distance
+--- those who entered from a different occupation --- may show small
+measured distances. Plumbers and carpenters, for instance, share
+substantial task content in O\*NET profiles despite being formally
+distinct occupations with separate licensing regimes and credential
+requirements. This raises a broader question about whether O\*NET skill
+profiles adequately capture the labour market barriers between trades
+that are technically similar but institutionally distinct. To the extent
+that skill distance understates the true occupational distance between
+trades, the interaction coefficient for apprenticeship completers in the
+sample is attenuated regardless of how high their credential specificity
+is. The net direction of bias from apprenticeship underrepresentation is
+therefore unclear, and resolving it would require either a longer panel
+that captures more complete-program transitions or administrative data on
+apprenticeship registration and completion linked to the census records.
 
 
-##  Results [PLACEHOLDER — awaiting data]
 
-###  Local Mobility: Horse Race Results
+## Conclusion
 
-[KL improvement figures by cost metric and temperature, for core and robustness samples]
+- What we found \[PLACEHOLDER --- awaiting data\]
 
-###  Heterogeneity by Destination Gating
+The central policy takeaway from this analysis is that labour market
+adjustment mechanisms are not one-size-fits-all: the appropriate
+intervention depends on which mobility regime governs the occupations
+experiencing shortage. The three-regime structure identified in the
+horse race maps directly onto three distinct policy levers.
 
-[KL improvement by gating tertile — expected gradient: binary dominates at high gating, skill dominates at low gating]
+In low-gating occupations, where skill transferability governs mobility,
+reskilling and short-cycle training are the natural adjustment
+mechanisms. Workers in adjacent occupations already possess much of the
+relevant task content, and targeted upskilling can accelerate the
+reallocation of labour toward occupations in shortage without requiring
+full credential acquisition. The policy implication is that investment
+in modular, portable training that builds on existing skill profiles
+will generate the largest mobility response in this segment.
 
-###  Non-local Mobility
+In medium-gating occupations, where hierarchical distance governs
+mobility, the relevant bottleneck is not skill transferability but
+career ladder structure. Workers must move through intermediate rungs to
+reach higher-TEER occupations, and the policy lever is directing workers
+toward the first rung of the relevant ladder rather than attempting to
+skip steps. Bridging programs, mentorship structures, and targeted
+recruitment into entry-level positions in shortage occupations are the
+appropriate instruments here. Attempting to accelerate adjustment
+through reskilling alone will be ineffective if the hierarchical
+structure of the occupation requires progressive credential
+accumulation.
 
-[Distance ~ specificity regressions; new attainment vs. no new attainment comparison]
+In high-gating occupations, where the binary constraint governs mobility
+--- either a worker holds the required credential or they do not ---
+neither reskilling nor career ladder navigation can substitute for
+formal credential acquisition. Adjustment in this segment depends
+entirely on expanding formal training pipelines: increasing capacity in
+the relevant credential programs, reducing barriers to program entry,
+and shortening time-to-credential where possible. The policy implication
+is sobering: adjustment in high-gating occupations is structurally slow,
+and labour shortages in this segment are unlikely to be resolved through
+labour market flexibility alone.
 
+## Appendix A: O\*NET to NOC 2021 Skill Mapping
 
-##  Policy Implications
+OaSIS provides occupation-level skill profiles for Canadian
+classifications and would be an attractive data source for constructing
+$C_{\text{skill}}$. However, OaSIS does not expose how those profiles
+are constructed: the mapping between O\*NET and NOC occupations is not
+observable, the weights linking underlying occupations are not published,
+and there is no information on how multiple O\*NET occupations are
+combined to form a NOC profile. This appendix describes an alternative
+mapping constructed explicitly from published crosswalks, allowing full
+transparency of inputs and weights, diagnostic evaluation of mapping
+quality, and reproducibility of all outputs.
 
-Labour shortages in different segments require different adjustment mechanisms:
+The mapping chains four classifications: O\*NET 2019 $\rightarrow$ SOC
+2018 $\rightarrow$ NOC 2016 $\rightarrow$ NOC 2021. Each stage introduces
+potential one-to-many relationships. A naive approach would assign equal
+weight to all admissible paths, but this leads to over-weighting of
+occupations that appear frequently in crosswalk chains and inclusion of
+unrelated occupations. Instead, path weights are constructed to reflect
+the degree of splitting at each stage: if a source occupation splits into
+$n_s$ destination occupations at stage $s$, each path through that stage
+receives weight $w_s = 1/n_s$, and the overall path weight is
+$w_{\text{path}} = w_1 \times w_2 \times w_3$. Path weights are then
+aggregated by origin O\*NET occupation and destination NOC 2021 code and
+normalized to sum to one within each NOC to yield base weights. The
+consequences of naive versus path weighting can be severe: for NOC 72600
+(Air pilots, flight engineers and flying instructors), naive weights
+assign five-eighths of the skill profile to agricultural workers, while
+path weights assign 78\% to pilots.
 
-- **Low gating:** reskilling and short-cycle training can accelerate adjustment (skill transferability governs mobility)
-- **Medium gating:** direct workers towards the first rung of career ladders (hierarchical structure governs mobility)
-- **High gating:** adjustment depends on expanding formal training pipelines (binary constraint — either you have the credential or you don't)
+A power transformation and renormalization is then applied to further
+reduce the influence of mapping artifacts: $\tilde{w}_k \propto w_k^2$.
+This concentrates weight on the dominant O\*NET contributors and
+diminishes the influence of peripheral occupations that enter through
+crosswalk chains with many splits. For NOC 72600, downweighting
+increases the pilot share of the skill profile to 96\%. Each O\*NET
+occupation is then represented as a point in a reduced skill space using
+the first 10 principal components of the O\*NET skill content variables,
+and for each NOC 2021 code the weighted centroid of its contributing
+O\*NET occupations is computed using the downweighted mapping, yielding a
+10-dimensional skill profile for each NOC occupation.
 
----
+Two diagnostics assess the quality of each NOC's mapping in skill space.
+Herfindahl concentration measures how concentrated the mapping weights
+are across contributing O\*NET occupations: $H = \sum_k \tilde{w}_k^2$.
+For example, a Herfindahl in excess of $\frac{2}{3}$ indicates that the
+NOC skill profile is effectively dominated by a single O\*NET occupation
+with a minimum weight of 0.79; low values indicate a diffuse mapping.
+Scaled Similarity measures the internal coherence of the contributing
+occupations in skill space: the weighted average distance of each
+contributing O\*NET occupation from the NOC centroid is computed, then
+normalized to a $[0.05, 1]$ interval by dividing by the maximum value
+across all NOCs, multiplying by 0.95, and subtracting from 1, so that
+$SS = 1 - 0.95 \times \bar{d} / \max_j \bar{d}_j$. The lower bound of
+0.05 is chosen to match the approximate lower bound of the Herfindahl
+index, making the two measures' floors commensurable. The mapping quality
+composite is the product $H \times SS$, which is high only when the
+mapping is both concentrated and internally coherent. The three
+interpretation cases are: high $H$ with any $SS$ (no problem --- almost
+all weight on a single O\*NET occupation); low $H$ with high $SS$ (no
+problem --- diffuse but coherent); and low $H$ with low $SS$
+(problematic --- a diffuse average of disparate occupations whose skill
+profile is unreliable). NOC 41200 (University professors and lecturers)
+is a canonical example of the third case.
 
-##  Conclusion [PLACEHOLDER]
+NOC 2021 occupations in the bottom decile of $H \times SS$ are excluded
+from the local clean and non-local clean samples and isolated in the
+mapping quality diagnostic subsample. Because the exclusion criterion is
+based on mapping quality rather than occupation characteristics, it
+introduces noise into $C_{\text{skill}}$ selectively while leaving
+$C_{\text{hier}}$ and $C_{\text{binary}}$ unaffected --- a property
+exploited in the mapping quality falsification design described in
+Section @sec-data. The full mapping pipeline is implemented in
+the \texttt{onet-noc2021-crosswalk} repository
+(\url{https://github.com/bcgov/onet-noc2021-crosswalk}) and is
+constructed entirely from O\*NET data and published crosswalks.
 
-- What the paper establishes
-- What the policy takeaways are
-- Limitations and future directions
+## Appendix B: 2016 TEER mismatch
 
----
+Admisible TEERs are the Target TEER $\pm1$ plus TEER 0 (management), where the
+assumption is that Management roles are independent of Educational attainment. 
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcr}
+\toprule
+Highest Attainment & Target TEER & Admissible TEERs \\
+\midrule
+No certificate, diploma or degree & 5 & 4, 5, 0 \\
+Secondary (high) school diploma & 4 & 3, 4, 5, 0 \\
+Apprenticeship or trades certificate or diploma & 3 & 2, 3, 4, 0 \\
+College / CEGEP / other non-university & 2 & 1, 2, 3, 0 \\
+University certificate or diploma below bachelor & 2 & 1, 2, 3, 0 \\
+Bachelor's degree & 1 & 1, 2, 0 \\
+Above bachelor (Master's, PhD, MD, etc.) & 1 & 1, 2, 0 \\
+\bottomrule
+\end{tabular}
+\caption{Admissible TEERs by highest attainment level}
+\label{tab:teer_mismatch}
+\end{table}
+
+## Appendix C: Normalization Robustness  {#sec-AC}
+
+Recall that in the main body of the paper, we anchored all distance metrics by 
+the conditional median hierarchical distance.  In this appendix we explore whether 
+the results are robust to using instead either the 25th or 75th conditional quantiles. 
+Conditional quantiles are computed over within-category hierarchical distances,
+excluding the cross-category sentinel value of nine. The unconditional percentile
+locates the same value in the full pairwise distribution including sentinel values. 
+Skill anchor is the corresponding quantile of the skill distance distribution.
+
+```{r}
+#| echo: false
+calibration |>
+  mutate(
+    q_cond = scales::percent(q_cond),
+    p_uncond = scales::percent(p_uncond, accuracy = 0.1),
+    h_anchor = as.integer(h_anchor),
+    s_anchor = round(s_anchor, 2)
+  ) |>
+  rename(
+    `Conditional Quantile` = q_cond,
+    `Hierarchical Anchor` = h_anchor,
+    `Unconditional Percentile` = p_uncond,
+    `Skill Anchor` = s_anchor
+  ) |>
+  kable(
+    format = "latex",
+    caption = "Normalization anchors under alternative calibration quantiles",
+    align = c("c", "c", "c", "c"),
+    booktabs = TRUE
+  ) |>
+  kable_styling(
+    latex_options = c("striped", "hold_position"),
+    full_width = FALSE
+  )
+```
+
 
 ## References
-
-[Gathmann & Schönberg 2010]  
-[Anderson & van Wincoop 2003]  
-[Silva & Tenreyro 2006]  
-[Galichon — optimal transport methods]  
-[Kleiner & Krueger — occupational licensing]  
-[Others TBD from literature review]
-
----
-
-*Notes to self:*
-- *Methodology section is highest-value writing target pre-data*
-- *Introduction: lead with substantive puzzle, introduce EROT as the tool that answers it*
-- *Clarify epsilon selection procedure in §5.2*
-- *Describe residual heatmap diagnostic bridge function between Act 1 and Act 2 in §5.6*
-- *Confirm whether uniform off-diagonal null baseline needs its own subsection*

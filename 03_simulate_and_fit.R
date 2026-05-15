@@ -4,7 +4,7 @@ library(janitor)
 library(vroom)
 library(matrixStats)
 library(bcgovpond)
-library(safesink)
+library(safesink) #to install pak::pak("bcgov/safesink")
 library(conflicted)
 conflicts_prefer(vroom::cols)
 conflicts_prefer(vroom::col_double)
@@ -17,6 +17,7 @@ true_eps <- 1 #The true temperature of the system
 skill_dist <- read_rds(here("out","skill_dist.rds"))
 hier_dist <- read_rds(here("out","hier_dist.rds"))
 binary_dist <- read_rds(here("out","binary_dist.rds"))
+score_dist <- (hier_dist+skill_dist+binary_dist)/3 #average of the 3 distances for scoring
 #get the noc list....
 
 noc_list <- tibble(noc_plus_title=colnames(skill_dist))|>
@@ -63,7 +64,6 @@ b <- lfs_data|>
   arrange(noc_plus_title)|>
   with(setNames(prop, noc_plus_title))
 
-
 #sanity check before proceeding: we are mixing distance matrices, they need to be in same order.
 stopifnot(
   identical(rownames(skill_dist), rownames(hier_dist)),
@@ -95,6 +95,7 @@ lockBinding("master_ids", environment())
 skill_dist <- skill_dist[master_ids, master_ids]
 hier_dist  <- hier_dist[master_ids, master_ids]
 binary_dist <- binary_dist[master_ids, master_ids]
+score_dist <- score_dist[master_ids, master_ids]
 
 a <- a[master_ids]
 b <- b[master_ids]
@@ -103,26 +104,26 @@ global_simulations <- list(
   `DGP: 75% Skill / 25% Hierarchy` = list(
     a = a,
     b = b,
-    log_K = -(.75 * skill_dist + .25 * hier_dist)/true_eps
+    C = .75 * skill_dist + .25 * hier_dist
   ),
   `DGP: 50% Skill / 50% Hierarchy` = list(
     a = a,
     b = b,
-    log_K = -(.5 * skill_dist + .5 * hier_dist)/true_eps
+    C = .5 * skill_dist + .5 * hier_dist
   ),
   `DGP: 25% Skill / 75% Hierarchy` = list(
     a = a,
     b = b,
-    log_K = -(.25 * skill_dist + .75 * hier_dist)/true_eps
+    C = .25 * skill_dist + .75 * hier_dist
   )
 )
 
 global_P_fake <- map(global_simulations, \(sim) {
   stopifnot(
-    identical(names(sim$a), rownames(sim$log_K)),
-    identical(names(sim$b), colnames(sim$log_K))
+    identical(names(sim$a), rownames(sim$C)),
+    identical(names(sim$b), colnames(sim$C))
   )
-  sinkhorn_log(sim$a, sim$b, sim$log_K)$plan
+  sinkhorn_log(sim$a, sim$b, sim$C, true_eps)$plan
 })
 
 #have the fake data, ready to fit models
@@ -136,34 +137,31 @@ global_model_fits <- crossing(
     C = map(`Cost Matrix`, \(cm) {switch(cm, "Skill" = skill_dist,
                                              "Hierarchy" = hier_dist,
                                              "Binary" = binary_dist)}),
-    log_K = map2(C, Temperature, \(C, temp) -C / temp),
     a = map(P_obs, rowSums),
     b = map(P_obs, colSums),
-    P_hat = pmap(list(a, b, log_K),\(a, b, log_K) {
-        stopifnot(
-          identical(names(a), rownames(log_K)),
-          identical(names(b), colnames(log_K)))
-        sinkhorn_log(a, b, log_K)$plan
+    P_hat = pmap(list(a, b, C, Temperature),\(a, b, C, e) {
+        stopifnot( identical(names(a), rownames(C)), identical(names(b), colnames(C)))
+        sinkhorn_log(a, b, C, e)$plan
       }
     ),
     P_ind = map2(a, b, ~ .x %o% .y),
-    dgp = factor(dgp,levels = c("DGP: 75% Skill / 25% Hierarchy",
+    dgp = factor(dgp, levels = c("DGP: 75% Skill / 25% Hierarchy",
                                 "DGP: 50% Skill / 50% Hierarchy",
                                 "DGP: 25% Skill / 75% Hierarchy")))|>
-  select(dgp, Temperature, C, `Cost Matrix`, P_obs, P_hat, P_ind)
-
+  select(dgp, Temperature, C, `Cost Matrix`, P_obs, P_hat, P_ind)|>
+  mutate(score_dist = list(score_dist))
 
 write_rds(global_model_fits, here("out", "global_model_fits.rds"))
 
 
-# market sub_regimes------------------------------------
+# MARKET SUB REGIMES------------------------------------
 
-noc_specificity <- read_rds(here("out", "noc_specificity.rds")) |>
+noc_edu_spec <- read_rds(here("out", "noc_edu_spec.rds")) |>
   arrange(noc) |>
   select(noc_plus_title = noc, sub_regime)
 
-sub_regime_vec <- setNames(noc_specificity$sub_regime,
-                           noc_specificity$noc_plus_title)
+sub_regime_vec <- setNames(noc_edu_spec$sub_regime,
+                           noc_edu_spec$noc_plus_title)
 
 # enforce canonical ordering
 sub_regime_vec <- sub_regime_vec[master_ids]
@@ -218,11 +216,12 @@ C_minimal_skill <- skill_dist[sub_regime_vec == "Minimal (Binary)", , drop = FAL
 C_minimal_hier <- hier_dist[sub_regime_vec == "Minimal (Binary)", , drop = FALSE]
 
 
-sub_regime_simulations <- list(`Minimal` = list( a = a_binary_sub_regime, b = b, log_K = -C_minimal_binary/true_eps),
-                                `Vertical` = list( a = a_hier_sub_regime, b = b, log_K = -C_vertical_hier/true_eps),
-                                `Horizontal` = list( a = a_skill_sub_regime, b = b, log_K = -C_horizontal_skill/true_eps))
+sub_regime_simulations <- list(`Minimal` = list( a = a_binary_sub_regime, b = b, C = C_minimal_binary),
+                               `Vertical` = list( a = a_hier_sub_regime, b = b, C = C_vertical_hier),
+                               `Horizontal` = list( a = a_skill_sub_regime, b = b, C = C_horizontal_skill)
+                               )
 
-sub_regime_P_fake <- map(sub_regime_simulations, \(sim) sinkhorn_log(sim$a, sim$b, sim$log_K)$plan)
+sub_regime_P_fake <- map(sub_regime_simulations, \(sim) sinkhorn_log(sim$a, sim$b, sim$C, true_eps)$plan)
 
 #sub regime model fitting-----------------------------------
 
@@ -272,17 +271,17 @@ sub_regime_model_fits <- sub_regime_grid |>
     P_hat = pmap(
       list(a, b, C, Temperature),
       \(a, b, C, temp){
-      log_K <- -C/temp
       stopifnot(
-        identical(names(a), rownames(log_K)),
-        identical(names(b), colnames(log_K))
+        identical(names(a), rownames(C)),
+        identical(names(b), colnames(C))
       )
-      sinkhorn_log(a, b, log_K)$plan
+      sinkhorn_log(a, b, C, temp)$plan
       }
       ),
-    P_ind = map2(a, b, ~ .x %o% .y)
+    P_ind = map2(a, b, ~ .x %o% .y),
+    score_dist=map(a, subset_score_dist)
   )|>
-  select(dgp, Temperature, C, `Cost Matrix`=cost, P_obs, P_hat, P_ind)
+  select(dgp, a, b, Temperature, C, `Cost Matrix`=cost, P_obs, P_hat, P_ind, score_dist)
 
 write_rds(sub_regime_model_fits, here("out", "sub_regime_model_fits.rds"))
 
