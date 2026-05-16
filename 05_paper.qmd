@@ -295,7 +295,7 @@ closely over the range of distances relevant to observed mobility,
 diverging only in the right tail. The sensitivity of horse race results
 to the normalization anchor is examined in @sec-AC
 
-##Data {#sec-data}
+## Data {#sec-data}
 
 The analysis uses the Census 2016--2021 longitudinal file, constructed by linking
 long-form respondents across the two census cycles via the Derived Record Depository
