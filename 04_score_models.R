@@ -20,11 +20,11 @@ global_measures <- global_model_fits|>
          CWTVD_global_ind = pmap_dbl(list(P_obs, P_ind, score_dist), cwtvd),
          `relative CWTVD improvement` = (CWTVD_global_ind - CWTVD_global_hat) / CWTVD_global_ind
          )|>
-  select(dgp, Temperature, `Cost Matrix`, contains("relative"))|>
+  select(dgp, epsilon, `Cost Matrix`, contains("relative"))|>
   pivot_longer(cols=contains("relative"),names_to = "Measure")
 
 sim_score_plots$global_measures <- global_measures|>
-  ggplot(aes(Temperature, value, colour=`Cost Matrix`))+
+  ggplot(aes(epsilon, value, colour=`Cost Matrix`))+
   geom_vline(xintercept = 1, colour="white",lwd=2)+
   geom_hline(yintercept = 0, colour="white",lwd=2)+
   geom_hline(yintercept = 1, colour="white",lwd=2)+
@@ -38,6 +38,7 @@ sim_score_plots$global_measures <- global_measures|>
   facet_grid(Measure~dgp)+
   labs(title="Improvement relative to independence by Temperature across DGPs and Measure",
        subtitle="1 is perfect fit, 0 no improvement over independence, negative worse than independence",
+       x= expression(epsilon),
        y="improvement relative to independence")
 
 #sub regimes--------------------------------------------
@@ -49,11 +50,11 @@ sub_regime_measures <- sub_regime_model_fits|>
          CWTVD_global_hat = pmap_dbl(list(P_obs, P_hat, score_dist), cwtvd),
          CWTVD_global_ind = pmap_dbl(list(P_obs, P_ind, score_dist), cwtvd),
          `relative CWTVD improvement` = (CWTVD_global_ind - CWTVD_global_hat) / CWTVD_global_ind)|>
-  select(dgp, Temperature, `Cost Matrix`, contains("relative"))|>
+  select(dgp, epsilon, `Cost Matrix`, contains("relative"))|>
   pivot_longer(cols=contains("relative"),names_to = "Measure")
 
 sim_score_plots$sub_regime_measures <- sub_regime_measures|>
-  ggplot(aes(Temperature, value, colour=`Cost Matrix`))+
+  ggplot(aes(epsilon, value, colour=`Cost Matrix`))+
   geom_vline(xintercept = 1, colour="white",lwd=2)+
   geom_hline(yintercept = 0, colour="white",lwd=2)+
   geom_hline(yintercept = 1, colour="white",lwd=2)+
@@ -64,9 +65,10 @@ sim_score_plots$sub_regime_measures <- sub_regime_measures|>
                      breaks = c(-100, -10, -1, -0.1, 0, 0.1, 1),  # include 1 explicitly
                      labels = scales::label_number()
                      )+
-  facet_grid(Measure~dgp, scale="free_y")+
+  facet_grid(Measure~dgp, labeller = labeller(dgp = label_both), scale="free_y")+
   labs(title="Improvement relative to independence by Temperature across DGPs and Measure",
        subtitle="1 is perfect fit, 0 no improvement over independence, negative worse than independence",
+       x= expression(epsilon),
        y="improvement relative to independence")
 
 

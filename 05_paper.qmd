@@ -26,7 +26,7 @@ library(knitr)
 library(kableExtra)
 library(patchwork)
 library(conflicted)
-cdfs <- read_rds("out/dist_cdfs.rds")
+cdfs <- read_rds(here("out","dist_cdfs.rds"))
 calibration <- read_rds(here("out", "calibration.rds"))
 ```
 
@@ -118,6 +118,8 @@ The natural alternative to EROT for evaluating occupational mobility costs is th
 
 ## Cost Metrics
 
+Mobility costs are latent: workers' switching costs are not directly observed in the census data, and any cost metric is necessarily a specification of an unobservable quantity. The three candidate matrices — skill distance, hierarchical distance, and binary switching cost — represent distinct hypotheses about the structure of those latent costs. The horse race asks which specification best rationalizes observed transitions, not which one correctly measures an observable.
+
 The skill distance matrix $C_{\text{skill}}$ is constructed from 161 O\*NET
 measures spanning skills, abilities, knowledge, and work activities,
 mapped to NOC 2021 occupations via a purpose-built crosswalk [@onet_to_noc]. 
@@ -164,7 +166,7 @@ characterize where and how measurement error enters $C_{\text{skill}}$.
 Our crosswalk makes this structure transparent and therefore makes the
 identification strategy falsifiable. 
 
-The hierarchical distance matrix $C_{\text{hier}}$ is derived directly
+The hierarchical distance matrix $C_{\text{hierarchy}}$ is derived directly
 from the NOC 2021 taxonomy, treating the occupational classification
 structure as a tree metric. Distance between any two occupations is
 defined as follows: zero if all five digits match (same unit group); one
@@ -184,7 +186,7 @@ The binary switching cost matrix $C_{\text{binary}}$ assigns a cost of zero
 to remaining in the same occupation and one to any transition. It is a 
 limiting case, even more extreme than the hierarchical distance --- 
 topologically, the labour market is comprised of 504 distinct silos, each 
-with no internal structure of any kind. $C_{\text{binary}}$ serves two roles in the analysis. First, it is the theoretical straw man in the global horse race: if occupational mobility costs are purely a function of whether a switch occurs rather than how far, then $C_{\text{binary}}$ should rationalize observed mobility patterns better than $C_{\text{skill}}$ or $C_{\text{hier}}$. Second, and more subtly,  $C_{\text{binary}}$ is best suited to settings where mobility is limited --- where most workers stay rather than move. In such settings, the information contained in a richer cost structure can cause model fit to worsen. This second role motivates the Binary sub-regime hypothesis: in occupations where human capital is so specific that all exits appear equally distant, binary is not merely the straw man but the correct description of the mobility geometry.
+with no internal structure of any kind. $C_{\text{binary}}$ serves two roles in the analysis. First, it is the theoretical straw man in the global horse race: if occupational mobility costs are purely a function of whether a switch occurs rather than how far, then $C_{\text{binary}}$ should rationalize observed mobility patterns better than $C_{\text{skill}}$ or $C_{\text{hierarchy}}$. Second, and more subtly,  $C_{\text{binary}}$ is best suited to settings where mobility is limited --- where most workers stay rather than move. In such settings, the information contained in a richer cost structure can cause model fit to worsen. This second role motivates the Binary sub-regime hypothesis: in occupations where human capital is so specific that all exits appear equally distant, binary is not merely the straw man but the correct description of the mobility geometry.
 
 ## Cost Metric Normalization
 
@@ -233,15 +235,15 @@ The analysis uses the Census 2016--2021 longitudinal file, constructed by linkin
 The estimation sample is partitioned into subsets that vary in two dimensions:
 whether the local/non-local regime assignment is correct, and whether occupation measurement is clean. This design generates a natural ordering of expected model fit that serves as an internal validation of the partition's theoretical content.
 
-The local clean sample is the primary identification sample for the horse race, and the falsification sample for the specificity regression. It comprises individuals with an observed occupation in both 2016 and 2021, no increase in highest educational attainment between the two census years, no self-employment in 2016, no TEER--attainment mismatch in 2016, and an \textsc{o*net}-to-\textsc{noc} mapping quality score above the bottom decile. This is the sample where the horse race should work best and where the specificity regression should find nothing.
+The local clean sample is the primary identification sample for the horse race, and the falsification sample for the specificity regression. It comprises individuals with an observed occupation in both 2016 and 2021, no increase in highest educational attainment between the two census years, no self-employment in 2016, no TEER--attainment mismatch in 2016, and an O*NET-to-NOC mapping quality score above the bottom decile. This is the sample where the horse race should work best and where the specificity regression should find nothing.
 
-The non-local clean sample comprises individuals who acquire a new highest educational attainment between 2016 and 2021 and report an observed occupation in both periods, subject to the same measurement restrictions: no self-employment in 2016, no TEER--attainment mismatch, and an \textsc{o*net}-to-\textsc{noc} mapping quality score above the bottom decile. It is the primary estimation sample for the specificity regression, and the falsification sample for the horse race. This is the sample where the specificity regression should work best and where the horse race should find nothing. 
+The non-local clean sample comprises individuals who acquire a new highest educational attainment between 2016 and 2021 and report an observed occupation in both periods, subject to the same measurement restrictions: no self-employment in 2016, no TEER--attainment mismatch, and an  O*NET-to-NOC  mapping quality score above the bottom decile. It is the primary estimation sample for the specificity regression, and the falsification sample for the horse race. This is the sample where the specificity regression should work best and where the horse race should find nothing. 
 
 The mismeasurement diagnostic samples introduce measurement problems one at a time, holding regime assignment correct. The occupational mismeasurement sample retains individuals whose 2016 occupation is likely mismeasured, identified by two criteria. Self-employed workers are included in the mismeasurement partition on the grounds that self-employment is associated with role multiplicity — owners simultaneously performing managerial, technical, and administrative functions — making the reported NOC an unreliable anchor for measuring occupational distance. The second is TEER--attainment mismatch, where the reported occupation is inconsistent with highest educational attainment. Attainment mismatch could easily occur for either recent attainments or for those awaiting credential recognition.\footnote{For details regarding TEER--attainment mismatch criteria, see Appendix B.} Both criteria introduce noise into the origin occupation, and their effects on model fit are expected to be symmetric across cost matrices.
 
-The mapping quality sample retains individuals whose 2016 occupation falls in the bottom decile of the \textsc{o*net}-to-\textsc{noc} mapping quality composite; poor mapping introduces noise specifically into $C_{\text{skill}}$ while leaving $C_{\text{hier}}$ unaffected, providing a difference-in-differences diagnostic on metric-specific fit degradation. Each of these samples is expected to show worse fit than the corresponding clean sample, with the mapping quality sample showing selective degradation of $C_{\text{skill}}$ relative to $C_{\text{hier}}$.
+The mapping quality sample retains individuals whose 2016 occupation falls in the bottom decile of the  O*NET-to-NOC  mapping quality composite; poor mapping introduces noise specifically into $C_{\text{skill}}$ while leaving $C_{\text{hierarchy}}$ unaffected, providing a difference-in-differences diagnostic on metric-specific fit degradation. Each of these samples is expected to show worse fit than the corresponding clean sample, with the mapping quality sample showing selective degradation of $C_{\text{skill}}$ relative to $C_{\text{hierarchy}}$.
 
-The mismeasurement residual samples comprise all observations not assigned to any of the named samples above, split by regime. The local mismeasured residual contains individuals in the local regime with multiple simultaneous measurement problems --- self-employment, TEER--attainment mismatch, and/or poor \textsc{o*net}-to-\textsc{noc} mapping in combination. The non-local mismeasured residual contains individuals in the non-local regime with multiple simultaneous measurement problems. Within each regime the source of fit degradation is measurement noise rather than regime misassignment, preserving the interpretability of the regime axis while acknowledging that the specific contribution of each noise source cannot be separately identified. Expected fit is worse than the corresponding single-problem diagnostic samples but, crucially, better than the out-of-regime clean samples --- where the only problem is regime misassignment. If that ordering holds, it constitutes direct evidence that regime misassignment is more damaging to model fit than the accumulation of measurement problems, strengthening the theoretical case for the local/non-local partition.
+The mismeasurement residual samples comprise all observations not assigned to any of the named samples above, split by regime. The local mismeasured residual contains individuals in the local regime with multiple simultaneous measurement problems --- self-employment, TEER--attainment mismatch, and/or poor  O*NET-to-NOC  mapping in combination. The non-local mismeasured residual contains individuals in the non-local regime with multiple simultaneous measurement problems. Within each regime the source of fit degradation is measurement noise rather than regime misassignment, preserving the interpretability of the regime axis while acknowledging that the specific contribution of each noise source cannot be separately identified. Expected fit is worse than the corresponding single-problem diagnostic samples but, crucially, better than the out-of-regime clean samples --- where the only problem is regime misassignment. If that ordering holds, it constitutes direct evidence that regime misassignment is more damaging to model fit than the accumulation of measurement problems, strengthening the theoretical case for the local/non-local partition.
 
 Two sample restriction mechanisms introduce a potential selection concern for the horse race. Non-linkage and non-observability of occupation are both
 disproportionately concentrated among low-attachment workers --- individuals with casual, seasonal, or intermittent employment whose identifying information is also less stable across census cycles --- so the two filters largely co-select the same low-skill population rather than introducing independent exclusions. This shared exclusion affects the representativeness of population-level transition estimates but does not threaten the internal validity of the horse race. For the horse race results to be biased, the excluded workers' transitions would need to be systematically more or less rationalizable by a particular cost matrix than those of their observed
@@ -378,7 +380,7 @@ an existing transport plan.
 
 The scoring cost matrix $C$ used in CWTVD is the arithmetic mean of the
 three candidate normalized cost matrices: $C_{\text{skill}}$,
-$C_{\text{hier}}$, and $C_{\text{binary}}$. Using a neutral common metric
+$C_{\text{hierarchy}}$, and $C_{\text{binary}}$. Using a neutral common metric
 ensures that no candidate model is advantaged by the choice of scoring
 matrix. The two metrics are complementary by design: KL divergence
 captures overall probability mass misallocation regardless of geometry,
@@ -573,7 +575,7 @@ from the local clean and non-local clean samples and isolated in the
 mapping quality diagnostic subsample. Because the exclusion criterion is
 based on mapping quality rather than occupation characteristics, it
 introduces noise into $C_{\text{skill}}$ selectively while leaving
-$C_{\text{hier}}$ and $C_{\text{binary}}$ unaffected --- a property
+$C_{\text{hierarchy}}$ and $C_{\text{binary}}$ unaffected --- a property
 exploited in the mapping quality falsification design described in @sec-data. The full mapping pipeline is implemented in
 [@onet_to_noc] and is
 constructed entirely from O\*NET data and published crosswalks.

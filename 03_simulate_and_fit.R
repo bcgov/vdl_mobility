@@ -12,7 +12,7 @@ conflicts_prefer(vroom::col_character)
 conflicts_prefer(dplyr::filter)
 
 source(here("R", "other.R"))
-true_eps <- 1 #The true temperature of the system
+true_eps <- 1 #The true epsilon of the system
 #normalized distance matrices-----------------------------------
 skill_dist <- read_rds(here("out","skill_dist.rds"))
 hier_dist <- read_rds(here("out","hier_dist.rds"))
@@ -131,7 +131,7 @@ global_P_fake <- map(global_simulations, \(sim) {
 global_model_fits <- crossing(
   dgp = names(global_P_fake),
   `Cost Matrix` = c("Skill","Hierarchy", "Binary"),
-  Temperature = 2^seq(-1,1,.1)) |>
+  epsilon = 2^seq(-1,1,.1)) |>
   mutate(
     P_obs = map(dgp, ~global_P_fake[[.x]]),
     C = map(`Cost Matrix`, \(cm) {switch(cm, "Skill" = skill_dist,
@@ -139,7 +139,7 @@ global_model_fits <- crossing(
                                              "Binary" = binary_dist)}),
     a = map(P_obs, rowSums),
     b = map(P_obs, colSums),
-    P_hat = pmap(list(a, b, C, Temperature),\(a, b, C, e) {
+    P_hat = pmap(list(a, b, C, epsilon),\(a, b, C, e) {
         stopifnot( identical(names(a), rownames(C)), identical(names(b), colnames(C)))
         sinkhorn_log(a, b, C, e)$plan
       }
@@ -148,7 +148,7 @@ global_model_fits <- crossing(
     dgp = factor(dgp, levels = c("DGP: 75% Skill / 25% Hierarchy",
                                 "DGP: 50% Skill / 50% Hierarchy",
                                 "DGP: 25% Skill / 75% Hierarchy")))|>
-  select(dgp, Temperature, C, `Cost Matrix`, P_obs, P_hat, P_ind)|>
+  select(dgp, epsilon, C, `Cost Matrix`, P_obs, P_hat, P_ind)|>
   mutate(score_dist = list(score_dist))
 
 write_rds(global_model_fits, here("out", "global_model_fits.rds"))
@@ -173,9 +173,9 @@ sub_regime_vec <- sub_regime_vec[master_ids]
 stopifnot(!anyNA(sub_regime_vec))
 
 stopifnot(all(c(
-  "Horizontal (Skill)",
-  "Vertical (Hierarchy)",
-  "Minimal (Binary)"
+  "Skill",
+  "Hierarchy",
+  "Binary"
 ) %in% sub_regime_vec))
 
 # ----------------------------
@@ -196,61 +196,61 @@ stopifnot(identical(colnames(binary_dist), master_ids))
 
 #subset the a vector, and keep appropriate rows of C matrices
 
-a_skill_sub_regime <- a[sub_regime_vec == "Horizontal (Skill)"]
-a_hier_sub_regime <- a[sub_regime_vec == "Vertical (Hierarchy)"]
-a_binary_sub_regime <- a[sub_regime_vec == "Minimal (Binary)"]
+a_skill_sub_regime <- a[sub_regime_vec == "Skill"]
+a_hierarchy_sub_regime <- a[sub_regime_vec == "Hierarchy"]
+a_binary_sub_regime <- a[sub_regime_vec == "Binary"]
 
-#Horizontal Regime
-C_horizontal_skill <- skill_dist[sub_regime_vec == "Horizontal (Skill)", , drop = FALSE]
-C_horizontal_hier <- hier_dist[sub_regime_vec == "Horizontal (Skill)", , drop = FALSE]
-C_horizontal_binary <- binary_dist[sub_regime_vec == "Horizontal (Skill)", , drop = FALSE]
+#Skill Regime
+C_skill_skill <- skill_dist[sub_regime_vec == "Skill", , drop = FALSE]
+C_skill_hierarchy <- hier_dist[sub_regime_vec == "Skill", , drop = FALSE]
+C_skill_binary <- binary_dist[sub_regime_vec == "Skill", , drop = FALSE]
 
-#Vertical Regime
-C_vertical_hier <- hier_dist[sub_regime_vec == "Vertical (Hierarchy)", , drop = FALSE]
-C_vertical_skill <- skill_dist[sub_regime_vec == "Vertical (Hierarchy)", , drop = FALSE]
-C_vertical_binary <- binary_dist[sub_regime_vec == "Vertical (Hierarchy)", , drop = FALSE]
+#Hierarchy Regime
+C_hierarchy_hierarchy <- hier_dist[sub_regime_vec == "Hierarchy", , drop = FALSE]
+C_hierarchy_skill <- skill_dist[sub_regime_vec == "Hierarchy", , drop = FALSE]
+C_hierarchy_binary <- binary_dist[sub_regime_vec == "Hierarchy", , drop = FALSE]
 
-#Minimal Regime
-C_minimal_binary <- binary_dist[sub_regime_vec == "Minimal (Binary)", , drop = FALSE]
-C_minimal_skill <- skill_dist[sub_regime_vec == "Minimal (Binary)", , drop = FALSE]
-C_minimal_hier <- hier_dist[sub_regime_vec == "Minimal (Binary)", , drop = FALSE]
+#Binary Regime
+C_binary_binary <- binary_dist[sub_regime_vec == "Binary", , drop = FALSE]
+C_binary_skill <- skill_dist[sub_regime_vec == "Binary", , drop = FALSE]
+C_binary_hierarchy <- hier_dist[sub_regime_vec == "Binary", , drop = FALSE]
 
 
-sub_regime_simulations <- list(`Minimal` = list( a = a_binary_sub_regime, b = b, C = C_minimal_binary),
-                               `Vertical` = list( a = a_hier_sub_regime, b = b, C = C_vertical_hier),
-                               `Horizontal` = list( a = a_skill_sub_regime, b = b, C = C_horizontal_skill)
+sub_regime_simulations <- list(`Binary` = list( a = a_binary_sub_regime, b = b, C = C_binary_binary),
+                               `Hierarchy` = list( a = a_hierarchy_sub_regime, b = b, C = C_hierarchy_hierarchy),
+                               `Skill` = list( a = a_skill_sub_regime, b = b, C = C_skill_skill)
                                )
 
 sub_regime_P_fake <- map(sub_regime_simulations, \(sim) sinkhorn_log(sim$a, sim$b, sim$C, true_eps)$plan)
 
 #sub regime model fitting-----------------------------------
 
-dgp <- c("Minimal", "Vertical", "Horizontal")
-cost <- c("Binary", "Hier", "Skill")
-Temperature <- 2^seq(-1, 1, .1)
+dgp <-  c("Binary", "Hierarchy", "Skill")
+cost <- dgp
+epsilon <- 2^seq(-1, 1, .1)
 
 sub_regime_grid <- tidyr::crossing(
   dgp,
   cost,
-  Temperature)|>
+  epsilon)|>
   mutate(`Cost Matrix`=paste(dgp, cost, sep="_"))
 
 a_list <- list(
-  "Minimal" = a_binary_sub_regime,
-  "Vertical" = a_hier_sub_regime,
-  "Horizontal" = a_skill_sub_regime
+  "Binary" = a_binary_sub_regime,
+  "Hierarchy" = a_hierarchy_sub_regime,
+  "Skill" = a_skill_sub_regime
 )
 
 C_list <- list(
-  "Horizontal_Skill" = C_horizontal_skill,
-  "Horizontal_Hier" = C_horizontal_hier,
-  "Horizontal_Binary" = C_horizontal_binary,
-  "Vertical_Hier" = C_vertical_hier,
-  "Vertical_Skill" = C_vertical_skill,
-  "Vertical_Binary" = C_vertical_binary,
-  "Minimal_Binary" = C_minimal_binary,
-  "Minimal_Skill" = C_minimal_skill,
-  "Minimal_Hier" = C_minimal_hier
+  "Skill_Skill" = C_skill_skill,
+  "Skill_Hierarchy" = C_skill_hierarchy,
+  "Skill_Binary" = C_skill_binary,
+  "Hierarchy_Hierarchy" = C_hierarchy_hierarchy,
+  "Hierarchy_Skill" = C_hierarchy_skill,
+  "Hierarchy_Binary" = C_hierarchy_binary,
+  "Binary_Binary" = C_binary_binary,
+  "Binary_Skill" = C_binary_skill,
+  "Binary_Hierarchy" = C_binary_hierarchy
 )
 
 sub_regime_grid <- sub_regime_grid |>
@@ -269,19 +269,19 @@ stopifnot(
 sub_regime_model_fits <- sub_regime_grid |>
   mutate(
     P_hat = pmap(
-      list(a, b, C, Temperature),
-      \(a, b, C, temp){
+      list(a, b, C, epsilon),
+      \(a, b, C, epsilon){
       stopifnot(
         identical(names(a), rownames(C)),
         identical(names(b), colnames(C))
       )
-      sinkhorn_log(a, b, C, temp)$plan
+      sinkhorn_log(a, b, C, epsilon)$plan
       }
       ),
     P_ind = map2(a, b, ~ .x %o% .y),
     score_dist=map(a, subset_score_dist)
   )|>
-  select(dgp, a, b, Temperature, C, `Cost Matrix`=cost, P_obs, P_hat, P_ind, score_dist)
+  select(dgp, a, b, epsilon, C, `Cost Matrix`=cost, P_obs, P_hat, P_ind, score_dist)
 
 write_rds(sub_regime_model_fits, here("out", "sub_regime_model_fits.rds"))
 

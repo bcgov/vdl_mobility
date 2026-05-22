@@ -41,7 +41,7 @@ dest_plt <- noc_edu_spec|>
   scale_fill_viridis_d()+
   geom_point(shape=21, size=3, stroke=.5) +
   scale_x_log10(labels=scales::comma)+
-  labs(fill="Hypothesized Type of Movement \n and (appropriate cost matrix)")
+  labs(fill="Sub-regimes")
 ```
 
 ::: {style="text-align: center;"}
@@ -196,7 +196,7 @@ We compare cost structures given fixed marginals
 :::
 ::::
 
-## Mobility determined by cost–temperature ratio
+## ε controls sensitivity to cost differences
 
 $$
 \frac{C_{ij}}{\varepsilon}
@@ -379,11 +379,11 @@ Some occupations draw from **very specific educational paths**.
 
 ## Local mobility regimes
 
-| Mobility   | Description                                | Cost Matrix  |
-|:-----------|:-------------------------------------------|:-------------|
-| Limited    | (Top tertile & TEERs 1,2)                  | Binary       |
-| Vertical   | Middle tertile + (Top tertile & TEERs 3,4) | Hierarchical |
-| Horizontal | Bottom tertile + all TEERs 0,5             | Skill        |
+| Description                    | Cost Matrix  |
+|:-------------------------------|:-------------|
+| Top tertile                    | Binary       |
+| Middle tertile                 | Hierarchical |
+| Bottom tertile + all TEERs 0,5 | Skill        |
 
 
 ## Hypothesized market segments
