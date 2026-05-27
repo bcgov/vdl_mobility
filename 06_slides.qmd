@@ -47,7 +47,7 @@ dest_plt <- noc_edu_spec|>
 ::: {style="text-align: center;"}
 <br><br>
 
-## Where Skills vs Institutions Shape Occupational Mobility
+## Occupational Mobility Is Not One Thing: 
 
 #### Methodology and Simulation Evidence
 
@@ -184,16 +184,18 @@ $$
 
 We compare cost structures given fixed marginals
 
-##  {background-image="images/hammer.jpg" background-size="cover" background-opacity="0.5"}
+## Using a gravity model would be akin to... 
 
-:::: center-slide
-::: medium-text
+:::: {.columns}
 
-**Gravity:** estimates origin/destination attractiveness (fixed effects) jointly with costs  
-
-**EROT:** holds marginal structure fixed and evaluates cost models conditional on it
-
+::: {.column width="50%" .fragment}
+![](images/hobbled.png)
 :::
+
+::: {.column width="50%" .fragment}
+![](images/hobbled2.png)
+:::
+
 ::::
 
 ## ε controls sensitivity to cost differences
@@ -367,7 +369,7 @@ $$
 
 - The measures work when they should, and fail when they should not
 
-## Specificity Tertiles
+## Occupation's Education Specificity
 
 Some occupations draw from **very specific educational paths**.
 
@@ -375,7 +377,7 @@ Some occupations draw from **very specific educational paths**.
 
 - KL measures average log-surprise (relative to the workforce baseline)  
 
-- We remove mechanical relationship with occupation size: $$\text{specificity}= \log(KL) - \widehat{E}[\log(KL)\mid \log(T)]$$
+- We remove mechanical relationship with occupation size: $$\text{OES}= \log(KL) - \widehat{E}[\log(KL)\mid \log(T)]$$
 
 ## Local mobility regimes
 
@@ -410,7 +412,7 @@ p
 #| fig-height: 8
 #| out-width: 100%
 sim_score_plots$sub_regime_measures+
-  labs(x = "Temperature (\u03b5)")+
+  labs(x = "\u03b5")+
     theme(text=element_text(size=16))
 ```
 
@@ -421,8 +423,8 @@ sim_score_plots$sub_regime_measures+
 **Distance \~ specificity measures + origin fixed effects**
 
 -   Specificity measures (CIP–NOC KL):
-    -   Education specificity → CIP exit concentration (wormhole entrance)
-    -   Destination gating → NOC entry concentration (wormhole exit)
+    -   EOS → education exit concentration (wormhole entrance)
+    -   OES → occupation entry concentration (wormhole exit)
 -   Hypotheses
     -   New attainment: distance ↑ with specificity
     -   No new attainment: no systematic relationship
@@ -433,21 +435,21 @@ sim_score_plots$sub_regime_measures+
 
     -   Local mobility: also hetergeneous!
 
-        -   limited movement → binary 
-        -   horizontal movement → skill 
-        -   vertical movement → hierarchy 
+        -   High OES → binary 
+        -   Low OES+TEER 0 & 5 → skill 
+        -   Medium OES → hierarchy 
         
     -   Non-local mobility
 
-        -   Distance travelled ~ education specificity and destination gating
+        -   Distance travelled ~ measures of specificity
 
 ## Policy implication
 
 -   Labour shortages in different segments likely require different adjustment mechanisms
 
-    -   Horizontal: reskilling and short-cycle training can accelerate adjustment
-    -   Vertical: direct workers towards "first rung" of career ladders
-    -   Limited: adjustment depends on expanding formal training pipelines
+    -   Skill: reskilling and short-cycle training can accelerate adjustment
+    -   Hierarchy: direct workers towards bottom platform of silo
+    -   Binary: adjustment depends on expanding formal training pipelines
 
 ## 
 
@@ -458,9 +460,6 @@ Thank you!
 
 Questions?
 
-Coop Term in Ministry of Post Secondary Education and Future Skills:
-
-contact Nicole.Bruce\@gov.bc.ca
 ::::
 
 ## Data: Census 2016–2021 Longitudinal File

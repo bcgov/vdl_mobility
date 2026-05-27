@@ -104,16 +104,10 @@ stopifnot(min(binary_dist) == 0, max(binary_dist) == 1)
 
 #Calibration-------------------------------------
 
-max_h <- max(hier_dist_raw, na.rm = TRUE)
 h_all <- offdiag(hier_dist_raw)
 s_all <- offdiag(skill_dist_raw)
 
-# Define the "non-maximal" hierarchical subset (exclude max distance and zeros)
-h_nonmax <- h_all[h_all < max_h & h_all > 0]
-
-# Conditional quantile anchors within the informative (non-maximal) region
-q_cond <- c(0.25, 0.50, 0.75)
-h_anchor <- as.numeric(quantile(h_nonmax, probs = q_cond, na.rm = TRUE, type = 7))
+h_anchor <- 2:4
 # Map each anchor value to its unconditional percentile in the FULL hierarchical distribution
 # (including max-distance pairs). This is the empirical CDF value F_H(h_anchor).
 p_uncond <- sapply(h_anchor, function(x) mean(h_all <= x, na.rm = TRUE))
@@ -122,7 +116,6 @@ s_anchor <- as.numeric(quantile(s_all, probs = p_uncond, na.rm = TRUE, type = 7)
 
 # Summarize
 calibration <- tibble::tibble(
-  q_cond = q_cond,
   h_anchor = h_anchor,
   p_uncond = p_uncond,
   s_anchor = s_anchor
@@ -130,16 +123,16 @@ calibration <- tibble::tibble(
 
 #Normalization----------------------
 
-skill_dist <- skill_dist_raw/calibration$s_anchor[calibration$q_cond==.5]
-hier_dist <- hier_dist_raw/calibration$h_anchor[calibration$q_cond==.5]
+skill_dist <- skill_dist_raw/calibration$s_anchor[calibration$h_anchor==3]
+hier_dist <- hier_dist_raw/3
 
 hdfr <-   data.frame(value = as.vector(hier_dist_raw),  distance = "Hierarchy")
 sdfr <-   data.frame(value = as.vector(skill_dist_raw), distance = "Skills")
 bdfr <-   data.frame(value = as.vector(binary_dist), distance = "Binary")
 
 raw <- ggplot(mapping=aes(x = value, colour=distance)) +
-  geom_vline(xintercept = 4, lty=2, alpha=.25)+
-  geom_hline(yintercept = calibration$p_uncond[calibration$q_cond==.5], lty=2, alpha=.25)+
+  geom_vline(xintercept = 3, lty=2, alpha=.25)+
+  geom_hline(yintercept = calibration$p_uncond[calibration$h_anchor==3], lty=2, alpha=.25)+
   stat_ecdf(data=bdfr, lwd=2, alpha=.5) +
   stat_ecdf(data=sdfr, lwd=1, alpha=.75) +
   stat_ecdf(data=hdfr, lwd=.25, alpha=1) +
@@ -156,7 +149,7 @@ sdfn <-   data.frame(value = as.vector(skill_dist), distance = "Skills")
 bdfn <-   data.frame(value = as.vector(binary_dist), distance = "Binary")
 
 normalized <- ggplot(mapping=aes(x = value, colour=distance)) +
-  geom_hline(yintercept = calibration$p_uncond[calibration$q_cond==.5], alpha=.25, lty=2)+
+  geom_hline(yintercept = calibration$p_uncond[calibration$h_anchor==3], alpha=.25, lty=2)+
   geom_vline(xintercept = 1, lty=2, alpha=.25)+
   stat_ecdf(data=bdfn, lwd=2, alpha=.5) +
   stat_ecdf(data=sdfn, lwd=1, alpha=.75) +
