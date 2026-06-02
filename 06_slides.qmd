@@ -47,7 +47,7 @@ dest_plt <- noc_edu_spec|>
 ::: {style="text-align: center;"}
 <br><br>
 
-## Occupational Mobility Is Not One Thing: 
+## NOC $\rightarrow$ NOC, who is where?
 
 #### Methodology and Simulation Evidence
 

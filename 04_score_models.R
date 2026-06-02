@@ -36,9 +36,9 @@ sim_score_plots$global_measures <- global_measures|>
                      labels = scales::label_number()
   )+
   facet_grid(Measure~dgp)+
-  labs(title="Improvement relative to independence by Temperature across DGPs and Measure",
+  labs(title="Improvement relative to independence by \u03b5 across DGPs and Measure",
        subtitle="1 is perfect fit, 0 no improvement over independence, negative worse than independence",
-       x= expression(epsilon),
+       x= "\u03b5",
        y="improvement relative to independence")
 
 #sub regimes--------------------------------------------
@@ -66,9 +66,9 @@ sim_score_plots$sub_regime_measures <- sub_regime_measures|>
                      labels = scales::label_number()
                      )+
   facet_grid(Measure~dgp, labeller = labeller(dgp = label_both), scale="free_y")+
-  labs(title="Improvement relative to independence by Temperature across DGPs and Measure",
+  labs(title="Improvement relative to independence by \u03b5 across DGPs and Measure",
        subtitle="1 is perfect fit, 0 no improvement over independence, negative worse than independence",
-       x= expression(epsilon),
+       x= "\u03b5",
        y="improvement relative to independence")
 
 
