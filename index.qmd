@@ -1,0 +1,379 @@
+---
+title: "Online Companion to *Occupational Mobility Is Not One Thing: Evidence from the Canadian Labour Market*"
+author: "Richard Martin"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    toc-title: "Contents"
+    code-fold: TRUE
+    smooth-scroll: true
+    self-contained: true
+    theme: flatly
+    page-layout: full
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(here)
+library(janitor)
+library(plotly)
+library(gt)
+library(DT)
+library(conflicted)
+conflicts_prefer(dplyr::filter)
+conflicts_prefer(dplyr::select)
+source(here("R", "other.R"))
+```
+
+```{r load-data, include=FALSE}
+k_vs_spearman    <- read_rds(here("out", "k_vs_spearman.rds"))
+hier             <- read_rds(here("out", "hier_dist_raw.rds"))
+educ_specificity <- read_rds(here("out", "edu_noc_spec.rds"))
+noc_specificity  <- read_rds(here("out", "noc_edu_spec.rds"))
+calibration      <- read_rds(here("out", "calibration.rds"))
+skills_mat       <- read_rds(here("out", "skill_dist_raw.rds"))
+sim_score_plots <- read_rds(here("out","sim_score_plots.rds"))
+
+skills_hc      <- hclust(as.dist(skills_mat), method = "average")
+skills_ord     <- skills_hc$order
+skills_mat_ord <- skills_mat[skills_ord, skills_ord]
+skills_xlab    <- as.character(colnames(skills_mat_ord))
+skills_ylab    <- as.character(rownames(skills_mat_ord))
+
+dest_plt <- noc_specificity |>
+  ggplot(aes(T, specificity, text = noc, fill = sub_regime)) +
+  scale_fill_viridis_d() +
+  geom_point(shape = 21, size = 3, stroke = .5) +
+  scale_x_log10(labels = scales::comma) +
+  labs(fill = "Sub Regime")
+
+dest_spear <- round(cor(noc_specificity$T, noc_specificity$specificity, method = "spearman"), 2)
+dest_pear  <- round(cor(noc_specificity$T, noc_specificity$specificity), 2)
+
+spec_plt <- ggplot(educ_specificity, aes(T,
+                                         specificity,
+                                         fill = attain_bin,
+                                         text = paste0("CIP:", cip,
+                                                       "\n Highest:", highest))) +
+  scale_fill_viridis_d() +
+  geom_jitter(shape = 21, size = 1.5, stroke = .1) +
+  scale_x_log10(labels = scales::comma) +
+  labs(title = "Visibility of groups can be toggled by clicking legend below",
+       fill = NULL)
+
+spec_spear <- round(cor(educ_specificity$T, educ_specificity$specificity, method = "spearman"), 2)
+spec_pear  <- round(cor(educ_specificity$T, educ_specificity$specificity), 2)
+```
+
+## Overview {#sec-overview}
+
+This companion is designed to ensure transparency and reproducibility for the paper
+*Occupational Mobility Is Not One Thing: Evidence from the Canadian Labour Market*.
+It provides technical detail on distance metrics, normalization, and specificity measures.
+
+**Contents**
+
+- **Skill distance**: O\*NET-based occupational skill vectors, dimensionality reduction
+  via PCA, and the resulting continuous distance matrix.
+- **Hierarchical distance**: Taxonomy-based discrete distances derived from the NOC
+  structure, resulting in labour market silos with internal TEER platforms.
+- **Cost matrix normalization**: Percentile-based anchoring across distance metrics.
+- **Occupation's education specificity**: A size-adjusted measure of concentration in
+  educational inflows into occupations.
+- **Education's occupation specificity**: A size-adjusted measure of concentration in
+  occupational outcomes across fields of study and attainment levels.
+
+---
+
+## Skill Distance {#sec-skill}
+
+We use 161 occupational characteristics (Skills, Abilities, Knowledge, Work Activities)
+from O\*NET to measure the distance between occupations. Because occupational skill
+vectors are high-dimensional and highly correlated, Euclidean distances computed in the
+full feature space may suffer from distance concentration. We therefore project the data
+onto the 12 leading principal components, which achieve a 99% rank correlation of
+pairwise distances relative to the full 161-dimensional space. This reduces noise from
+low-variance directions while preserving the dominant geometry of the skill space.
+
+### PCA Rank Preservation {#sec-skill-pca}
+
+The figure below shows the Spearman rank correlation between pairwise distances in the
+$k$-dimensional PCA space and the full 161-dimensional space, as a function of $k$. The
+dashed line marks the 0.99 threshold; 12 components suffice.
+
+```{r skill-pca, warning=FALSE}
+ggplot(k_vs_spearman, aes(x = k, y = spearman)) +
+  geom_hline(yintercept = .99, lty = 2) +
+  geom_line() +
+  geom_point() +
+  scale_x_continuous(limits = c(0, 50)) +
+  labs(
+    title = "First 12 PCs achieve ≥0.99 rank preservation of pairwise distances.",
+    y = "Spearman correlation (distance ranks)",
+    x = "Number of PCs"
+  ) +
+  theme(text = element_text(size = 10))
+```
+
+### Raw Skill Distance Heatmap {#sec-skill-heatmap}
+
+Occupations are ordered by AGNES. Diagonal entries are self-distances (zero). Dark clusters along the diagonal indicate groups of
+occupations with similar skill profiles. Use left mouse button drag to zoom. Raw distances are normalized prior to use: [Cost Matrix Normalization](#sec-norm) 
+
+```{r skill-heatmap}
+#| fig-width: 5.6
+#| fig-height: 8
+plotly::plot_ly(
+  x = skills_xlab,
+  y = skills_ylab,
+  z = skills_mat_ord,
+  type = "heatmap",
+  hovertemplate = paste(
+    "<b>Origin:</b> %{y}<br>",
+    "<b>Destination:</b> %{x}<br>",
+    "<b>Distance:</b> %{z:.3f}",
+    "<extra></extra>"
+  )
+) |>
+  plotly::layout(
+    xaxis = list(type = "category", showticklabels = FALSE, ticks = ""),
+    yaxis = list(type = "category", showticklabels = FALSE, ticks = "")
+)
+```
+
+---
+
+## Hierarchical Distance {#sec-hier}
+
+Hierarchical distances encode institutional and career barriers implied by the NOC
+taxonomy. Distance between any two occupations is defined as follows:
+
+1. All five digits match: distance = 0
+2. First four digits match: distance = 1
+3. First three digits match: distance = 2
+4. First digit matches: distance = 3 + |ΔTEER|
+5. Otherwise: distance = 9
+
+The Spearman correlation between skill and hierarchical distances is 
+`r round(cor(as.vector(skills_mat[upper.tri(skills_mat)]), as.vector(hier[upper.tri(hier)]), method = "spearman"), 3)`,
+indicating that institutional proximity and skill similarity are positively but only
+modestly related. The two metrics encode overlapping yet distinct occupational geometries.
+
+### Distance Counts {#sec-hier-counts}
+
+```{r hier-counts}
+hier_count_plot <- table(hier) |>
+  enframe() |>
+  ggplot(aes(name, value)) +
+  geom_col(alpha = .5) +
+  scale_y_continuous(trans = "log10", labels = scales::comma) +
+  theme_minimal() +
+  labs(x = "Normalized Distance", y = "Counts")
+
+plotly::ggplotly(hier_count_plot)
+```
+
+### Raw Hierarchical Distance Heatmap {#sec-hier-heatmap}
+
+Occupations are ordered by AGNES. The block-diagonal structure reflects the ten NOC broad occupational categories (silos); yellow off-diagonal
+entries are cross-silo pairs assigned the sentinel distance of 9.  Raw distances are normalized prior to use: [Cost Matrix Normalization](#sec-norm). Use left mouse button drag to zoom.
+
+```{r hier-heatmap}
+#| fig-width: 5.6
+#| fig-height: 8
+hier_hc      <- hclust(as.dist(hier), method = "average")
+hier_ord     <- hier_hc$order
+hier_mat_ord <- hier[hier_ord, hier_ord]
+hier_xlab    <- as.character(colnames(hier_mat_ord))
+hier_ylab    <- as.character(rownames(hier_mat_ord))
+
+plotly::plot_ly(
+  x = hier_xlab,
+  y = hier_ylab,
+  z = hier_mat_ord,
+  type = "heatmap",
+  hovertemplate = paste(
+    "<b>Origin:</b> %{y}<br>",
+    "<b>Destination:</b> %{x}<br>",
+    "<b>Distance:</b> %{z:.3f}",
+    "<extra></extra>"
+  )
+) |>
+  plotly::layout(
+    xaxis = list(type = "category", showticklabels = FALSE, ticks = ""),
+    yaxis = list(type = "category", showticklabels = FALSE, ticks = "")
+  )
+```
+
+---
+
+## Cost Matrix Normalization {#sec-norm}
+
+The normalization anchor is hierarchical distance 3 — the maximum within-silo horizontal distance, representing movement within a broad occupational group without crossing TEER levels. This anchor is theoretically motivated: any hierarchical distance above 3 involves either a TEER step or a cross-category transition, meaning distance 3 is the natural boundary between horizontal and vertical mobility within the silo structure. Hierarchical distances are divided by 3; skill distances are divided by 7.145, the value at the same unconditional percentile of the skill distance distribution. Robustness to anchoring at distances 2 and 4 — one step shorter and one step into vertical movement respectively — is examined in Appendix C.
+
+```{r norm-table}
+calibration |>
+  gt() |>
+  fmt_number(columns = c(h_anchor, p_uncond, s_anchor), decimals = 3) |>
+  cols_label(
+    h_anchor = "Hierarchical Anchor",
+    p_uncond = "Unconditional Percentile",
+    s_anchor = "Skill Anchor"
+  ) |>
+  tab_options(table.font.size = "90%", data_row.padding = px(4)) |>
+  tab_header(title = md("**Calibration Anchors Across Distance Metrics**"))
+```
+
+The median non-maximal hierarchical transition lies at approximately the 4th percentile
+of the full hierarchical distribution; the skill anchor is defined at this same percentile
+to ensure comparable substitution intensity.
+
+
+## Occupation's Education Specificity {#sec-occ-spec}
+
+### Construction
+
+**Step 1 — Overall Educational Distribution.** We compute the overall educational
+distribution across all NOCs. This represents the expected education mix for a worker
+drawn from the educated workforce without conditioning on occupation.
+
+**Step 2 — Distribution Within Each NOC.** For each NOC we compute total workers $T$,
+occupation-specific education shares $p$, and compare to the baseline distribution $p_0$
+using KL divergence.
+
+**Step 3 — Remove Size Effect.** Finite samples mechanically inflate divergence for small
+occupations. We remove this artifact by residualizing $\log(\text{KL})$ on
+$\log(T)$:
+
+```{r occ-spec-code, echo=TRUE, eval=FALSE}
+fit_kl <- lm(log(KL) ~ log(T), data = noc_specificity)
+
+noc_specificity <- noc_specificity |>
+  mutate(
+    specificity = log(KL) - predict(fit_kl),
+    TEER = str_sub(noc, 2, 2)
+  )
+```
+
+The resulting specificity index measures how distinct an occupation's education mix is
+relative to what is statistically expected given its size. KL divergence captures where
+probability mass is concentrated relative to the aggregate baseline, rather than how much
+mass lies in very small cells. Residualizing removes predictable finite-sample divergence,
+isolating economically meaningful concentration. The index is orthogonal to occupation
+size by construction, ensuring that specificity reflects structural concentration in
+educational pathways rather than equilibrium scale effects.
+
+### Specificity vs. Occupation Size {#sec-occ-spec-plot}
+
+High specificity indicates few educational pathways into the occupation. Residualized
+specificity is not correlated with log occupation size
+(Pearson = `r dest_pear`, Spearman = `r dest_spear`).
+
+```{r occ-spec-plot}
+p <- ggplotly(dest_plt)
+p$x$data <- rev(p$x$data)
+p
+```
+
+### Occupation Specificity Rankings {#sec-occ-spec-table}
+
+```{r occ-spec-table}
+noc_specificity |>
+  select(noc, specificity, sub_regime) |>
+  arrange(desc(specificity)) |>
+  my_dt()
+```
+
+---
+
+## Education's Occupation Specificity {#sec-educ-spec}
+
+### Construction
+
+Education's occupation specificity is constructed symmetrically to occupation's education
+specificity, conditioning on education rather than occupation.
+
+**Step 1 — Overall Occupational Distribution.** We compute the aggregate occupational
+distribution across all educated workers, serving as the baseline absent conditioning on
+field of study.
+
+**Step 2 — Distribution Within Each Education.** For each (CIP × attainment) cell we
+compute total graduates $T$, occupation shares $p$, and compare to the aggregate
+occupational distribution $p_0$ using KL divergence.
+
+**Step 3 — Remove Size Effect.** As with occupations, small cohorts mechanically inflate
+divergence. We residualize $\log(\text{KL})$ on $\log(T)$:
+
+```{r educ-spec-code, echo=TRUE, eval=FALSE}
+fit_kl <- lm(log(KL) ~ log(T), data = educ_specificity)
+
+educ_specificity <- educ_specificity |>
+  mutate(specificity = log(KL) - predict(fit_kl))
+```
+
+The resulting index measures how narrowly a field of study feeds into occupations,
+independent of cohort size. Professional and doctoral fields exhibit consistently high
+occupational concentration; below that threshold, specificity varies substantially within
+attainment levels, confirming that educational level alone does not determine pipeline
+concentration.
+
+### Specificity vs. Cohort Size {#sec-educ-spec-plot}
+
+High specificity indicates few occupational pathways from the education. Residualized
+specificity is not correlated with log cohort size
+(Pearson = `r spec_pear`, Spearman = `r spec_spear`).
+
+```{r educ-spec-plot}
+spec_plotly <- plotly::ggplotly(spec_plt)
+
+for (i in seq_along(spec_plotly$x$data)) {
+  spec_plotly$x$data[[i]]$name <- gsub(",1", "", spec_plotly$x$data[[i]]$name)
+  spec_plotly$x$data[[i]]$name <- gsub("^\\(|\\)$", "", spec_plotly$x$data[[i]]$name)
+}
+
+spec_plotly |>
+  plotly::layout(
+    legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.2)
+  )
+```
+
+### Education Specificity Rankings {#sec-educ-spec-table}
+
+```{r educ-spec-table}
+educ_specificity |>
+  select(highest, cip, specificity) |>
+  arrange(desc(specificity)) |>
+  my_dt()
+```
+
+## Cherry-picking simulation {#sec-simulation}
+
+Suppose that rather than evaluating across a grid of $\varepsilon$ 
+values, we evaluated the models only at $\varepsilon = 0.5$ and used 
+only relative KL improvement to score them. In this case, when the 
+true DGP is hierarchy, binary would be identified as the winning 
+metric — but this win is merely an artifact of skill and hierarchy 
+incurring an overconfidence penalty at low $\varepsilon$, where 
+cost-sensitive matrices concentrate probability mass too aggressively 
+relative to observed mobility. This artifact extends to CWTVD as well.
+
+The operative winner-declaration rule does not require dominance 
+across the full $\varepsilon$ grid for non-binary metrics. A 
+non-binary metric is declared the winner if it dominates all 
+non-binary competitors across the sweep, even if it loses to binary 
+at low $\varepsilon$ where the overconfidence penalty is operative. 
+Binary is the exception: a binary win requires dominance across the 
+entire grid. Genuine binary dominance is distinguished from 
+artefactual dominance by its persistence at mid-to-high $\varepsilon$ 
+values where the overconfidence penalty dissipates.
+
+
+```{r}
+#| fig-width: 12
+#| fig-height: 8
+sim_score_plots$sub_regime_measures
+```
+
+
