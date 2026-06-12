@@ -47,9 +47,9 @@ dest_plt <- noc_edu_spec|>
 ::: {style="text-align: center;"}
 <br><br>
 
-## NOC $\rightarrow$ NOC, who is where?
+## Occupational Mobility Is Not One Thing
 
-#### Methodology and Simulation Evidence
+#### NOC $\rightarrow$ NOC, who goes there?
 
 <br><br> Richard Martin <br> Ministry of Post Secondary Education and Future Skills\
 <br><br><br> <small><em>Disclaimer: The views expressed are those of the author and do not necessarily reflect those of the Government of British Columbia.</em></small>
@@ -97,7 +97,7 @@ where $P_{ij}$ is the probability of moving from occupation $i$ to $j$, and $C_{
 2.  **Institutional hierarchy**
     -   Distance based on NOC (Canada’s occupational classification)
 3.  **Binary switching cost**
-    -   *(degenerate distance; stay vs move only)*
+    -   degenerate distance; stay vs move only
 
 ## Comparing distance metrics
 
@@ -112,18 +112,9 @@ where $P_{ij}$ is the probability of moving from occupation $i$ to $j$, and $C_{
 
 ## Data: Census 2016–2021 Longitudinal
 
-1. Core sample: Observations with reliable measurement
+- Contains all records that can be linked between 2016 and 2021 Census.
 
-2. Robustness / Falsification samples (measurement challenges)
-    - 2016 Occupation mismeasurement
-      - Self-employed  
-      - TEER–highest attainment mismatch  
-
-    - Mapping misspecification
-      - Bottom 10% by (Herfindahl × similarity)  
-
-    - Joint mismeasurement
-      - Both sources of noise
+- We create *measurement complete* subset, where occupation, field of study, highest educational attainment and age are all observed in both 2016 and 2021.
 
 ## Mobility regimes
 
@@ -189,11 +180,11 @@ We compare cost structures given fixed marginals
 :::: {.columns}
 
 ::: {.column width="50%" .fragment}
-![](images/hobbled.png)
+![](images/wheel_of_fortune.jpeg)
 :::
 
 ::: {.column width="50%" .fragment}
-![](images/hobbled2.png)
+![](images/unfair.jpg)
 :::
 
 ::::
