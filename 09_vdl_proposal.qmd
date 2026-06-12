@@ -8,7 +8,7 @@ bibliography: references.bib
 
 # Project title
 
-**Occupational Mobility Regimes: Skills, Institutions, and Destination Gating**
+**Occupational Mobility Is Not One Thing: Evidence from the Canadian Labour Market**
 
 # Project description, rationale, and objectives
 
@@ -90,37 +90,62 @@ The analysis requires individual-level transitions between occupations over time
 
 The project relies on Census 2016-2021 Longitudinal File (CEN_2016_2021), which allow observation of individuals’ occupations at two points in time. This is essential to construct the origin–destination transition matrix and analyze mobility patterns.
 
-## Dataset(s) required
+## Dataset(s) required 
 
--   Census 2016-2021 Longitudinal File (CEN_2016_2021)  
+- Census 2016-2021 Longitudinal File (CEN_2016_2021)  
 
-### Sample description
+- Access to all linked records, including those with missing values for the variables of interest are required.
+
+### Sample description (Updated)
 
 -   Unit of analysis: individual workers
--   Population of interest: individuals observed in both the 2016 and 2021 Censuses who report in both periods:
-    - a valid occupation (as a NOC 2021 code in both periods)
-    - highest educational attainment
- 
+-   We create a  *measurement complete* subset of the linked data where occupation, field of study, highest educational attainment, class of worker, and **age** are all observed in both 2016 and 2021.
+- All modelling is conducted on the measurement complete subset, but we also need to query the missingness (relative to all linked observations) in order to quantify potential selection bias. 
+
+- For example, the non-local partition is restricted to individuals who acquire a new highest educational attainment between 2016 and 2021 and report an occupation in both periods. Thus the excluded population is disproportionately those whose human capital increased the most. The most demanding programs --- medicine, law, dentistry --- require sufficiently intensive study that concurrent employment is largely precluded, meaning students in these programs are less likely to report a 2016 occupation and thus are excluded from the sample. The most demanding programs tend also to be the most specific, and the human capital increment they confer is large --- generating the longest new-attainment-driven occupational jumps. Excluding these observations truncates the upper tail of the distance distribution precisely where education specificity is highest. Estimates of the relationship between education specificity and distance traveled should accordingly be interpreted as lower bounds on the true relationship in the full population of new educational attainment. A diagnostic plot of each education's occupation specificity against the proportion of workers missing a 2016 occupation --- computed by 2021 education --- will quantify the magnitude of this truncation.
 
 ### Geography
 
 -   National
 
-### Variable list
+### Variable list (Updated)
 
 Variables expected to be used include:
 
 -   Occupation (ideally as a NOC 2021 code in both periods)
 -   Highest level of educational attainment
--   Field of study (CIP, where available)
--   Class of Worker (where available)
--   Survey weights.
+-   Field of study (CIP)
+-   Class of Worker 
+-   **Age**
+
+I am requesting Age be included for two purposes:
+
+1) For local mobility, age tertiles replace occupation education 
+specificity (OES) tertiles as the sub-regime classifier in a 
+placebo partition test. The theoretical prior is that OES --- 
+which measures the credential selectivity of the origin occupation 
+directly --- should produce more decisive horse race results than 
+age, which predicts mobility only as a proxy for accumulated 
+specific human capital. If this is borne out, it constitutes 
+evidence that OES is capturing the underlying mechanism rather 
+than acting as a demographic correlate.
+
+2) For non-local mobility, age is excluded from the main 
+specifications on theoretical grounds: in the non-local sample, 
+age predicts jump distance primarily through its correlation with 
+origin occupation quality --- younger workers acquiring credentials 
+tend to hold lower-skill 2016 occupations, generating mechanically 
+larger measured jumps. This is not a confound to be removed but 
+rather the wormhole mechanism operating as intended. However, a 
+referee may reasonably request age controls, and having age 
+available allows this robustness check to be conducted in advance.
+
 
 Derived variables will include:
 
 -   Indicators of occupational transitions between 2016 and 2021, constructed from origin–destination occupation pairs at the individual level
 -   Aggregated transition matrices and associated origin and destination marginals, constructed using survey weights
--   Measures of educational concentration by occupation, derived from NOC–education distributions (e.g., based on published cross-tabulations)
+-   Measures of education and occupation specificity, derived from NOC–education distributions (e.g., based on published cross-tabulations)
 -   Occupational distance matrices, including both skill-based measures constructed from publicly available O\*NET data and hierarchical measures based on the NOC classification
 
 ## Will datasets be merged or pooled together?
@@ -183,7 +208,7 @@ The analysis will be conducted using:
 Packages expected to be used include:
 
 -   data manipulation and analysis tools: [tidyverse](https://tidyverse.org/)
--   numerical computation tools: [safesink](https://github.com/bcgov/safesink), [matrixStats](https://cran.r-project.org/web/packages/matrixStats/index.html)
+-   numerical computation tools: [safesink](https://github.com/bcgov/safesink)
 
 No specialized or non-standard software requiring additional approval is expected.
 
