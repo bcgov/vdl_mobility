@@ -30,11 +30,9 @@ sim_score_plots$global_measures <- global_measures|>
   geom_hline(yintercept = 1, colour="white",lwd=2)+
   geom_line()+
   geom_point()+
-  scale_x_continuous(trans="log2")+
+  scale_x_continuous(trans="log10")+
   scale_y_continuous(transform = scales::pseudo_log_trans(sigma = .1, base = 2),
-                     breaks = c(-2, -1, 0, 1),  # include 1 explicitly
-                     labels = scales::label_number()
-  )+
+                     labels = scales::label_number())+
   facet_grid(Measure~dgp)+
   labs(title="Improvement relative to independence by \u03b5 across DGPs and Measure",
        subtitle="1 is perfect fit, 0 no improvement over independence, negative worse than independence",
@@ -60,11 +58,11 @@ sim_score_plots$sub_regime_measures <- sub_regime_measures|>
   geom_hline(yintercept = 1, colour="white",lwd=2)+
   geom_line()+
   geom_point()+
-  scale_x_continuous(trans="log2")+
+  scale_x_continuous(trans="log10", labels = scales::label_comma())+
   scale_y_continuous(transform = scales::pseudo_log_trans(sigma = .1, base = 10),
-                     breaks = c(-100, -10, -1, -0.1, 0, 0.1, 1),  # include 1 explicitly
-                     labels = scales::label_number()
-                     )+
+                     labels = scales::label_number(),
+                     breaks=c(-10,-1,0,1),
+                     limits=c(-10,1))+
   facet_grid(Measure~dgp, labeller = labeller(dgp = label_both), scale="free_y")+
   labs(title="Improvement relative to independence by \u03b5 across DGPs and Measure",
        subtitle="1 is perfect fit, 0 no improvement over independence, negative worse than independence",

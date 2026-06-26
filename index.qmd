@@ -31,7 +31,7 @@ source(here("R", "other.R"))
 k_vs_spearman    <- read_rds(here("out", "k_vs_spearman.rds"))
 hier             <- read_rds(here("out", "hier_dist_raw.rds"))
 educ_specificity <- read_rds(here("out", "edu_noc_spec.rds"))
-noc_specificity  <- read_rds(here("out", "noc_edu_spec.rds"))
+noc_edu_spec  <- read_rds(here("out", "noc_edu_spec.rds"))
 calibration      <- read_rds(here("out", "calibration.rds"))
 skills_mat       <- read_rds(here("out", "skill_dist_raw.rds"))
 sim_score_plots <- read_rds(here("out","sim_score_plots.rds"))
@@ -42,15 +42,17 @@ skills_mat_ord <- skills_mat[skills_ord, skills_ord]
 skills_xlab    <- as.character(colnames(skills_mat_ord))
 skills_ylab    <- as.character(rownames(skills_mat_ord))
 
-dest_plt <- noc_specificity |>
-  ggplot(aes(T, specificity, text = noc, fill = sub_regime)) +
+dest_plt <- noc_edu_spec |>
+  pivot_longer(cols = contains("Based on"), names_to = "criteria", values_to = "Sub Regime" )|>
+  ggplot(aes(T, specificity, text = noc, fill = `Sub Regime`)) +
   scale_fill_viridis_d() +
   geom_point(shape = 21, size = 3, stroke = .5) +
   scale_x_log10(labels = scales::comma) +
-  labs(fill = "Sub Regime")
+  facet_wrap(~criteria) 
 
-dest_spear <- round(cor(noc_specificity$T, noc_specificity$specificity, method = "spearman"), 2)
-dest_pear  <- round(cor(noc_specificity$T, noc_specificity$specificity), 2)
+
+dest_spear <- round(cor(noc_edu_spec$T, noc_edu_spec$specificity, method = "spearman"), 2)
+dest_pear  <- round(cor(noc_edu_spec$T, noc_edu_spec$specificity), 2)
 
 spec_plt <- ggplot(educ_specificity, aes(T,
                                          specificity,
@@ -211,7 +213,7 @@ plotly::plot_ly(
 
 ## Cost Matrix Normalization {#sec-norm}
 
-The normalization anchor is hierarchical distance 3 — the maximum within-silo horizontal distance, representing movement within a broad occupational group without crossing TEER levels. This anchor is theoretically motivated: any hierarchical distance above 3 involves either a TEER step or a cross-category transition, meaning distance 3 is the natural boundary between horizontal and vertical mobility within the silo structure. Hierarchical distances are divided by 3; skill distances are divided by 7.145, the value at the same unconditional percentile of the skill distance distribution. Robustness to anchoring at distances 2 and 4 — one step shorter and one step into vertical movement respectively — is examined in Appendix C.
+The normalization anchor is hierarchical distance 3 — the maximum within-silo horizontal distance, representing movement within a broad occupational group without crossing TEER levels. This anchor is theoretically motivated: any hierarchical distance above 3 involves either a TEER step or a cross-category transition, meaning distance 3 is the natural boundary between horizontal and vertical mobility within the silo structure. Hierarchical distances are divided by 3; skill distances are divided by 7.145, the value at the same unconditional percentile of the skill distance distribution. 
 
 ```{r norm-table}
 calibration |>
@@ -226,8 +228,7 @@ calibration |>
   tab_header(title = md("**Calibration Anchors Across Distance Metrics**"))
 ```
 
-The median non-maximal hierarchical transition lies at approximately the 4th percentile
-of the full hierarchical distribution; the skill anchor is defined at this same percentile
+The median non-maximal hierarchical transition lies at approximately the 4th percentile of the full hierarchical distribution; the skill anchor is defined at this same percentile
 to ensure comparable substitution intensity.
 
 
@@ -248,9 +249,9 @@ occupations. We remove this artifact by residualizing $\log(\text{KL})$ on
 $\log(T)$:
 
 ```{r occ-spec-code, echo=TRUE, eval=FALSE}
-fit_kl <- lm(log(KL) ~ log(T), data = noc_specificity)
+fit_kl <- lm(log(KL) ~ log(T), data = noc_edu_spec)
 
-noc_specificity <- noc_specificity |>
+noc_edu_spec <- noc_edu_spec |>
   mutate(
     specificity = log(KL) - predict(fit_kl),
     TEER = str_sub(noc, 2, 2)
@@ -280,8 +281,8 @@ p
 ### Occupation Specificity Rankings {#sec-occ-spec-table}
 
 ```{r occ-spec-table}
-noc_specificity |>
-  select(noc, specificity, sub_regime) |>
+noc_edu_spec |>
+  select(noc, specificity, contains("Based On")) |>
   arrange(desc(specificity)) |>
   my_dt()
 ```
@@ -348,32 +349,56 @@ educ_specificity |>
   my_dt()
 ```
 
-## Cherry-picking simulation {#sec-simulation}
+## The $\varepsilon$ sweep and the cherry-picking problem {#sec-simulation}
 
-Suppose that rather than evaluating across a grid of $\varepsilon$ 
-values, we evaluated the models only at $\varepsilon = 0.5$ and used 
-only relative KL improvement to score them. In this case, when the 
-true DGP is hierarchy, binary would be identified as the winning 
-metric — but this win is merely an artifact of skill and hierarchy 
-incurring an overconfidence penalty at low $\varepsilon$, where 
-cost-sensitive matrices concentrate probability mass too aggressively 
-relative to observed mobility. This artifact extends to CWTVD as well.
+Suppose that rather than evaluating across a grid of $\varepsilon$
+values, we evaluated the models only at $\varepsilon = 0.5$. If the
+DGP is hierarchy then binary would be identified as the winning
+metric — it dominates both skill and hierarchy in terms of relative KL
+improvement and relative CWTVD improvement. However, this win is an
+artefact, not a signal.
 
-The operative winner-declaration rule does not require dominance 
-across the full $\varepsilon$ grid for non-binary metrics. A 
-non-binary metric is declared the winner if it dominates all 
-non-binary competitors across the sweep, even if it loses to binary 
-at low $\varepsilon$ where the overconfidence penalty is operative. 
-Binary is the exception: a binary win requires dominance across the 
-entire grid. Genuine binary dominance is distinguished from 
-artefactual dominance by its persistence at mid-to-high $\varepsilon$ 
-values where the overconfidence penalty dissipates.
-
-
-```{r}
+```{r, warning=FALSE}
 #| fig-width: 12
 #| fig-height: 8
 sim_score_plots$sub_regime_measures
 ```
 
+All three cost matrices assign zero cost to the diagonal, so all three
+transport plans over-concentrate mass on the diagonal at low
+$\varepsilon$, predicting less movement than actually occurs. Skill and
+hierarchy compound this by additionally over-concentrating on
+geometrically cheap off-diagonal pairs, leaving insufficient mass for
+transitions their cost structure scores as expensive. Binary's
+over-concentration is confined to the diagonal alone, so it craters
+less severely — and its mechanical peak, where diagonal concentration
+just improves on independence before over-concentration takes over,
+occurs at a lower $\varepsilon$ than the true metric's peak. This
+mechanical peak is not evidence that binary is competitive with the
+true metric; it is a property of the mathematics, not the data.
+
+The winner of the horse race is the cost matrix whose peak relative
+improvement — maximised over the full $\varepsilon$ grid — is highest.
+This is the optimal transport analog to maximum likelihood model
+selection: the EROT plan $P^\star_{ij} = u_i e^{-C_{ij}/\varepsilon}
+v_j$ is the equilibrium of a multinomial logit discrete choice model,
+and comparing models by their maximised likelihood is equivalent to
+comparing their peak relative KL improvement. Peak CWTVD improvement
+is reported alongside KL as a complementary criterion: in a horse race
+about the geometry of mobility, closeness matters, and CWTVD penalises
+misallocation in proportion to how far the mass is from where it
+should be, where KL does not.  A result is declared a tie when the peak
+improvements of the leading metrics are indistinguishable — the 50/50
+skill/hierarchy panel below illustrates what a genuine tie looks like.
+
+## The higher resolution of CWTVD {#sec-higher-resolution}
+
+In the plot below, the peak score gap between the two leading cost metrics under relative CWTVD improvement (top row) widens as the data-generating mixture departs from balance — largest at 75/25 and 25/75, closing to a tie at the even 50/50 mixture, where a tie is the correct verdict. Relative KL improvement (bottom row) holds the two close to coincident across all three mixtures, resolving the imbalance only weakly. Note also the binary curve (red): under CWTVD its improvement collapses to the independence line after its peak, while under KL it retains a positive tail — KL rewards binary for reproducing the aggregate stay/move split regardless of where movers go, a credit CWTVD withholds.
+
+
+```{r, warning=FALSE}
+#| fig-width: 12
+#| fig-height: 8
+sim_score_plots$global_measures
+```
 

@@ -2,7 +2,6 @@ library(tidyverse)
 library(here)
 library(janitor)
 library(vroom)
-#library(matrixStats)
 library(bcgovpond)
 library(safesink) #to install pak::pak("bcgov/safesink")
 library(conflicted)
@@ -13,6 +12,8 @@ conflicts_prefer(dplyr::filter)
 
 source(here("R", "other.R"))
 true_eps <- 1 #The true epsilon of the system
+epsilon <- 10^seq(-1, 3, .1) #the grid to explore
+
 #normalized distance matrices-----------------------------------
 skill_dist <- read_rds(here("out","skill_dist.rds"))
 hier_dist <- read_rds(here("out","hier_dist.rds"))
@@ -131,7 +132,7 @@ global_P_fake <- map(global_simulations, \(sim) {
 global_model_fits <- crossing(
   dgp = names(global_P_fake),
   `Cost Matrix` = c("Skill","Hierarchy", "Binary"),
-  epsilon = 2^seq(-1,1,.1)) |>
+  epsilon) |>
   mutate(
     P_obs = map(dgp, ~global_P_fake[[.x]]),
     C = map(`Cost Matrix`, \(cm) {switch(cm, "Skill" = skill_dist,
@@ -158,7 +159,7 @@ write_rds(global_model_fits, here("out", "global_model_fits.rds"))
 
 noc_edu_spec <- read_rds(here("out", "noc_edu_spec.rds")) |>
   arrange(noc) |>
-  select(noc_plus_title = noc, sub_regime)
+  select(noc_plus_title = noc, sub_regime=`Based on Occupation Education Specificity`)
 
 sub_regime_vec <- setNames(noc_edu_spec$sub_regime,
                            noc_edu_spec$noc_plus_title)
@@ -227,7 +228,7 @@ sub_regime_P_fake <- map(sub_regime_simulations, \(sim) sinkhorn_log(sim$a, sim$
 
 dgp <-  c("Binary", "Hierarchy", "Skill")
 cost <- dgp
-epsilon <- 2^seq(-1, 1, .1)
+
 
 sub_regime_grid <- tidyr::crossing(
   dgp,

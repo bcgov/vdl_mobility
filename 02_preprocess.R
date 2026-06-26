@@ -208,12 +208,14 @@ noc_edu_spec <- noc_edu_spec |>
   mutate(
     specificity = log(KL) - predict(noc_edu_spec_fit),
     TEER = str_sub(noc, 2, 2),
-    tertile = ntile(specificity, 3),
-    sub_regime = if_else(TEER %in% c(0, 5), 1, tertile),
-    sub_regime = factor(
-      sub_regime,
-      labels = c("Skill", "Hierarchy", "Binary")
-    )
+    `Based on TEER` = case_when(TEER %in% c(0, 5)~"Skill",
+                           TEER  == 1 ~ "Binary",
+                           TRUE ~"Hierarchy"
+                           ),
+    `Based on Occupation Education Specificity` = case_when(
+      rank(specificity) > (504 - 96) ~ "Binary",
+      rank(specificity) <= 86        ~ "Skill",
+      TRUE                           ~ "Hierarchy")
   )
 
 #education's occupation specificity----------------------
