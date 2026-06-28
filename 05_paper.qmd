@@ -60,16 +60,16 @@ Regarding local mobility, we anticipate that no single metric will dominate glob
 
 The policy relevance is direct. Labour shortages in different segments of the market require different adjustment mechanisms, and the right mechanism depends on which distance metric governs mobility in that sub-regime. Shortages where human capital is general may be addressed through reskilling, building on transferable skills. Shortages where silo structure binds are best addressed by increasing supply at the bottom platform of the relevant silo, facilitating upward movement to address shortages at higher levels. Shortages where human capital is occupation-specific cannot be addressed through either mechanism: the relevant human capital is acquired only through specific education programs, so interventions must target access to and capacity within those programs directly. Getting the geometry right is therefore not merely a methodological contribution — it determines which policy lever to pull.
 
-For local mobility we use entropic regularized optimal transport (EROT) [@cuturi2013sinkhorn; @peyre2019computational] to conduct horse races among the candidate distance metrics, evaluating how well each rationalizes the full occupation-to-occupation transition matrix. The difficulty is that no single metric is self-evidently correct: skill, hierarchical, and binary distances each have theoretical support, and the natural regression-based test answers a different question from the one we want to settle. A gravity specification regressing log transitions on a candidate distance with origin and destination fixed effects, estimated by PPML to accommodate the count structure and zero flows, recovers the partial association between distance and flow once the margins are absorbed. That association characterizes how the metric covaries with transitions; it does not deliver the complete transition matrix the metric implies, which is what makes the geometries comparable to one another and to what is observed. EROT recovers that matrix. Given the occupation margins, each candidate metric yields a single predicted transition matrix, the entropic-regularized plan minimizing transport cost under that metric's cost structure, which we score against the observed matrix. Because every predicted plan satisfies the same margins by construction, the comparison across metrics isolates the within-margin allocation the geometry alone governs. Fixing the margins also makes the comparison a fair one, which we develop in Section \ref{sec-local}. 
+For local mobility we use entropic regularized optimal transport (EROT) [@cuturi2013sinkhorn; @peyre2019computational] to conduct horse races among the candidate distance metrics, evaluating how well each rationalizes the full occupation-to-occupation transition matrix. The difficulty is that no single metric is self-evidently correct: skill, hierarchical, and binary distances each have theoretical support, and the natural regression-based test answers a different question from the one we want to settle. A gravity specification regressing log transitions on a candidate distance with origin and destination fixed effects, estimated by PPML to accommodate the count structure and zero flows, recovers the partial association between distance and flow once the margins are absorbed. That association characterizes how the metric covaries with transitions; it does not deliver the complete transition matrix the metric implies, which is what makes the geometries comparable to one another and to what is observed. EROT recovers that matrix. Given the occupation margins, each candidate metric yields a single predicted transition matrix, the entropic-regularized plan minimizing transport cost under that metric's cost structure, which we score against the observed matrix. Because every predicted plan satisfies the same margins by construction, the comparison across metrics isolates the within-margin allocation the geometry alone governs. Fixing the margins also makes the comparison a fair one, which we develop in @sec-local. 
 
-For non-local mobility, we estimate, at the individual level, the reduced-form relationship between transition distance and two specificity measures. These measures capture the entrance and exit of wormholes through occupation space — the discontinuous, credential-driven jumps that constitute non-local movement. Education occupation specificity (EOS) measures how distinctive an education's associated occupation distribution is relative to the occupation distribution overall, proxying for a wormhole entrance. Occupation education specificity (OES) measures how distinctive an occupation's associated education distribution is relative to the education distribution overall, proxying for a wormhole exit. High values of both EOS and OES are predicted to produce long-distance jumps across the labour market; crucially, neither alone is sufficient — it is the conjunction of a specific education and a specific destination that opens a wormhole. For example, the occupation with the highest OES is 31111: Optometrists and the education with the highest EOS is 51.17 Optometry (OD) — a matched pair, the credential and the occupation it almost exclusively feeds. An optometry graduate whose 2021 occupation is not 31111 would be expected to travel a far shorter distance, the entrance opening onto no corresponding exit. At the other end of the spectrum, 24.01 Liberal arts and sciences, general studies and humanities has the lowest EOS and 65102: Store shelf stockers, clerks and order fillers has the lowest OES; this combination is expected to yield the shortest distance travelled.
+For non-local mobility, we estimate, at the individual level, the reduced-form relationship between transition distance and two specificity measures. These measures capture the entrance and exit of wormholes through occupation space — the discontinuous, credential-driven jumps that constitute non-local movement. Education occupation specificity (EOS) measures how distinctive an education's associated occupation distribution is relative to the occupation distribution overall, proxying for a wormhole entrance. Occupation education specificity (OES) measures how distinctive an occupation's associated education distribution is relative to the education distribution overall, proxying for a wormhole exit. Each is a size-residualized divergence whose construction we give in @sec-cf; here it is enough that a high value flags a distinctive conditional distribution and rankings below are on that residualized measure. High values of both EOS and OES are predicted to produce long-distance jumps across the labour market; crucially, neither alone is sufficient — it is the conjunction of a specific education and a specific destination that opens a wormhole. For example, the occupation with the highest OES is 31111: Optometrists and the education with the highest EOS is 51.17 Optometry (OD) — a matched pair, the credential and the occupation it almost exclusively feeds. An optometry graduate whose 2021 occupation is not 31111 would be expected to travel a far shorter distance, the entrance opening onto no corresponding exit. At the other end of the spectrum, 24.01 Liberal arts and sciences, general studies and humanities has the lowest EOS and 65102: Store shelf stockers, clerks and order fillers has the lowest OES; this combination is expected to yield the shortest distance travelled.
 
 
 [FINDINGS PLACEHOLDER]
 
 ## Conceptual Framework {#sec-cf}
 
-The central structural choice in this paper is the partition of occupational transitions into two qualitatively distinct regimes, by the size of the human-capital increment a worker acquires between census years. We define *education* as the cross product of highest attainment and field of study, and we read a change in education for its increment rather than for its mere occurrence. A worker acquires a large increment by reaching a higher level of attainment, or by changing field at the same level across a large distance in the field-of-study classification, which is genuine retraining into an area where the original credential does not transfer. A worker whose education record changes only across a small distance at the same level gains a small increment in human capital. We therefore place large-increment changes in the non-local regime and group small-increment same-level changes with local transitions. A local transition is then a move whose origin education is substantially unchanged, and a non-local transition is a move accompanied by a large increment.
+The central structural choice in this paper is the partition of occupational transitions into two qualitatively distinct regimes, by the size of the human-capital increment a worker acquires between census years. We define *education* as the cross product of highest attainment and field of study, and we read a change in education for its increment rather than for its mere occurrence. A worker acquires a large increment by reaching a higher level of attainment, or by changing field at the same level across a large distance in the field-of-study classification, which is genuine retraining into an area where the original credential does not transfer. A worker whose education record changes only across a small distance at the same level gains a small increment in human capital. We therefore place large-increment changes in the non-local regime, and small or zero increment changes in the local regime. 
 
 The increment, not the record change, is what the partition turns on, and this matters because a same-level field change is observationally ambiguous. The census records highest attainment and one field of study, not the number of credentials a worker holds, so a worker reporting one field in 2016 and a related field in 2021 may have earned a second degree or may have reported a single degree two ways. We do not need to resolve which. A second credential in a closely related field at the same level is a negligible human-capital increment whether or not it was genuinely earned, so both readings imply a worker who has not been repositioned in occupation space, and both belong with local mobility. Routing on increment size rather than on the bare fact of a record change makes the partition robust to this ambiguity.
 
@@ -98,7 +98,11 @@ distribution can only place mass on a limited number of occupations for
 niche educations, KL divergence has a mechanical floor; we therefore
 residualize $\log(\text{KL})$ on $\log(T)$ where $T$ is the total
 number of workers with that education. The residual from this
-regression is EOS. This measure enters only the non-local partition as
+regression is EOS. Because it is a regression residual, EOS is signed
+and centred near zero: a high value is a divergence above what the
+education's size predicts, not a high raw divergence, and the
+highest-EOS and lowest-EOS rankings used above are rankings on this
+residual. This measure enters only the non-local partition as
 a regressor proxying for wormhole entrance intensity. A symmetric
 procedure is followed to calculate an occupation's education
 specificity (OES): the KL divergence of $P(\text{education}|\text{NOC})$
@@ -147,10 +151,7 @@ roughly 19\% Binary, 64\% Hierarchy, and 17\% Skill --- reflects a
 prior that hierarchical distance governs the bulk of the Canadian
 labour market, with skill and binary metrics governing the tails.
 
-The TEER partition that supplies the group sizes has an independent theoretical motivation paralleling the OES logic. TEER 1 occupations, physicians, dentists, lawyers, carry the most occupation-specific human capital and map to the Binary sub-regime, where the prediction is that no occupational geometry orders destinations. TEER 5 occupations require little occupation-specific human capital, so the prediction is that skill similarity governs transitions regardless of broad group; together with TEER 0 senior managers, whose human capital is general enough to transfer across silos, they map to the Skill sub-regime. TEER 2, 3, and 4 fall in between, specific enough to impede many cross-silo transitions yet not so specific as to produce lock-in, and map to the Hierarchy sub-regime, where hierarchical distance is predicted to govern. The two orderings rest on different logics, yet both motivate the same three-way conceptual split, which is why the TEER partition serves as a robustness check on the primary OES-based partition. The partitions agree on 61% of occupations (Cohen's $\kappa = 0.27$); the check is whether the horse-race results hold under the TEER assignment, not whether the two assignments coincide.
-
-
-
+The TEER partition that supplies the group sizes has an independent theoretical motivation paralleling the OES logic. TEER enters this paper in three distinct roles: the level semantics introduced in the introduction (0 senior management through 5 short demonstration), the specificity ordering used here to motivate and size the partition, and the tree-metric distance use formalized in @sec-cost-metrics. The partition rests on the second of these. TEER 1 occupations, such as physicians, dentists, and lawyers, carry the most occupation-specific human capital and map to the Binary sub-regime, which makes no prediction about where a move leads. At the other end of the spectrum, we hypothesize that TEER 0 and 5 occupations carry so little occupation-specific human capital that they can freely traverse the broad occupational groups, and they map to the Skill sub-regime. TEER 2, 3, and 4 fall in between, with human capital specific enough to impede cross-silo transitions yet not so specific as to produce occupational lock-in, and map to the Hierarchy sub-regime. The two orderings rest on different logics, yet both motivate the same three-way conceptual split, so the TEER partition serves as a robustness check on the primary OES-based partition. The partitions agree on 61% of occupations; Cohen's $\kappa = 0.27$ reads lower because the construction forces equal group sizes, inflating the chance-agreement baseline against which $\kappa$ is measured. The check is whether the horse-race results hold under the TEER assignment, not whether the two assignments coincide.
 
 We treat the OES partition as the primary specification and the TEER partition as a confirmatory check. TEER is a coarse, discrete proxy for specificity, built for an unrelated administrative purpose; OES is a continuous measure derived directly from the equilibrium education mix observed for each occupation. The two partitions agree where TEER's administrative categories happen to track specificity, and diverge where they do not. @tbl-partition-crosstab quantifies that divergence: row-level concordance is weakest for TEER-Skill (35 of 86 occupations, 41%), intermediate for TEER-Binary (49 of 96, 51%), and strongest for TEER-Hierarchy (225 of 322, 70%). We read this ordering as evidence that TEER 0 and TEER 5 are the noisiest administrative buckets relative to the underlying specificity construct: a non-trivial share of nominally general-human-capital occupations turn out, once measured directly via OES, to draw from a more selective credential pipeline than their TEER level implies. The case of 41210, College and other vocational instructors — TEER 1, yet low OES — illustrates the same problem from the other direction.
 
@@ -255,7 +256,7 @@ bar considerably: the model's validity rests not on the absence of
 confounders but on the implausibility of a story that generates the
 predicted pattern of opposing failures across regimes.
 
-## Cost Metrics
+## Cost Metrics {#sec-cost-metrics}
 
 The skill distance matrix $C_{\text{skill}}$ is constructed from 161 
 O\*NET measures spanning skills, abilities, knowledge, and work 
@@ -294,7 +295,12 @@ structured metrics' additional geometry does not improve on $C_{\text{binary}}$.
 This second role motivates the Binary sub-regime hypothesis: where human 
 capital is specific enough that no occupational geometry orders exits, binary 
 is not a degenerate benchmark but a candidate description of the mobility 
-geometry, tested against the structured metrics on equal footing. 
+geometry, tested against the structured metrics on equal footing. Having no
+off-diagonal structure to allocate, binary has a single lever, the aggregate
+stay/move split, so it behaves as a one-parameter stay/move model whose
+fitted concentration encodes the mobility rate rather than a featureless
+benchmark. @sec-local uses this characterization when comparing where the
+three metrics peak.
 
 The hierarchical distance matrix $C_{\text{hierarchy}}$ is derived directly from the NOC 2021 taxonomy, treating the occupational classification structure as a tree metric. Distance between any two occupations is defined as follows: zero if all five digits match (same unit group); one if the first four digits match (same minor group, different unit group); two if the first three digits match (same sub-major group, different minor group); three plus the absolute difference in TEER level if only the first digit matches (same broad occupational category, different sub-major group); and nine for any cross-category transition. The absolute TEER difference ranges from zero to five, so within-category distances range from three to eight, preserving a strict separation from the cross-category sentinel value of nine.  An interactive hierarchical distance heatmap of the resulting matrix is available in the [online companion.](https://rpmartin.github.io/not-one-thing-companion/#sec-hier-heatmap)
 
@@ -366,9 +372,22 @@ occupations. Eight unit groups have no admissible O*NET mapping and
 are excluded from all estimation samples, leaving 504 occupations in 
 the analysis.
 
-There are two core subsamples used in both the local and non-local mobility analyses. Their role reverses depending on whether they serve as the primary identification sample or the falsification sample. The two samples are separated by the size of the human-capital increment a worker acquires between 2016 and 2021, as developed in Section \ref{sec-cf}. We operationalise the increment from the education record, the cross product of highest attainment and field of study, using the field-of-study classification's two-digit series as the unit of field distance.\[To be determined whether CIP in the linked file is harmonized or versioned.\] A worker acquires a large increment by reaching a higher level of attainment, or by changing field at the same level across two-digit series, which is retraining into an area where the original credential does not transfer. A worker whose education changes only within a two-digit series at the same level acquires a small increment and is grouped with the local sample.
+These 504 occupations are the universe over which the sub-regime
+partition is defined: the OES ranking that fixes the three sub-regimes
+(96 Binary, 86 Skill, 322 Hierarchy) is computed over all 504, and
+@tbl-partition-crosstab and @fig-regimes are likewise on the full 504.
+The mapping-quality exclusion enters one step later, at estimation
+rather than partition. The bottom decile of the $H \times SS$ mapping
+quality composite (Appendix A) flags 50 poorly mapped occupations, and
+the local clean and non-local clean samples are built from transitions
+among the remaining 454. A transition is dropped whenever either
+endpoint is one of the 50, so the clean estimation samples run on the
+454 cleanly mapped occupations while the partition they inherit was
+cut on the full 504. % RICH VERIFY: 504-then-cut, 50 poorly mapped, 454 clean — confirm headcounts against pipeline.
 
-Grouping the within-series same-level changes with local mobility is robust to a measurement ambiguity in the education record. The census records highest attainment and one field of study, not the number of credentials a worker holds, so a worker reporting one field in 2016 and a related field in 2021 may have earned a second credential or may have reported a single credential two ways. A second credential in a closely related field at the same level is a negligible increment whether or not it was genuinely earned, so both readings imply a worker who has not been repositioned in occupation space, and the routing does not depend on resolving which occurred. The composition of this cell tilts toward report instability in any case, since a redundant credential in a near field is an unattractive investment: a worker seeking to build on an existing credential would typically pursue a higher level rather than a second credential at the same one.
+There are two core subsamples used in both the local and non-local mobility analyses. Their role reverses depending on whether they serve as the primary identification sample or the falsification sample. The two samples are separated by the size of the human-capital increment a worker acquires between 2016 and 2021, as developed in @sec-cf. We operationalise the increment from the education record, the cross product of highest attainment and field of study, using the field-of-study classification's two-digit series as the unit of field distance.\[To be determined whether CIP in the linked file is harmonized or versioned.\] A worker acquires a large increment by reaching a higher level of attainment, or by changing field at the same level across two-digit series, which is retraining into an area where the original credential does not transfer. A worker whose education changes only within a two-digit series at the same level acquires a small increment and is grouped with the local sample.
+
+Grouping the within-series same-level changes with local mobility is robust to a measurement ambiguity in the education record, for the reason given in @sec-cf: a second credential in a closely related field at the same level is a negligible increment whether or not it was genuinely earned, so the routing does not depend on resolving which occurred. Here we add only what the data section is positioned to say, about the composition of the routed cell. That composition tilts toward report instability in any case, since a redundant credential in a similar field is an unattractive investment: a worker seeking to build on an existing credential would typically pursue a higher level rather than a similar credential at the same level.
 
 The \emph{local clean sample} comprises individuals whose education increment is small by this criterion, with no self-employment, no TEER--attainment mismatch, and an O*NET-to-NOC mapping quality score above the bottom decile. This is the sample where distance-based models should best rationalise mobility: human capital is stable over the inter-census period, the 2016 occupation is an informative anchor, and education acquired before 2016 is already reflected in where the worker starts. It is old news, not a useful predictor of subsequent movement.
 
@@ -380,10 +399,12 @@ so a reported occupation that is inconsistent with reported attainment is more l
 For non-local mobility we can perform one further diagnostic: the effect of poor skill mapping from O\*NET to NOC, when the data is otherwise appropriate for the model being fit. Poor skill mapping is identified by the bottom decile of the O\*NET-to-NOC mapping quality composite. Poor mapping introduces noise specifically into $C_{\text{skill}}$ while leaving 
 $C_{\text{hierarchy}}$ unaffected --- a metric-specific prediction 
 that serves as a falsification of the mapping quality composite 
-itself. This diagnostic is not available for local mobility: the 
-mapping quality split partitions the 504 occupations into 454 cleanly 
-mapped and 50 poorly mapped, so the local clean subset (transitions 
-among the 454 clean occupations) and the mapping quality subset (transitions involving at least one poorly mapped occupation) have disjoint cells by construction. Since $\Delta KL$ and $\Delta CWTVD$ require a common set of possible origin-destination pairs to be comparable, no valid comparison is possible between the local clean and mapping quality subsets.
+itself. This diagnostic is not available for local mobility. As noted
+above, the local clean subset is built from transitions among the 454
+cleanly mapped occupations, whereas the mapping quality subset is built
+from transitions involving at least one of the 50 poorly mapped
+occupations, so the two subsets have disjoint cells by construction.
+Since $\Delta KL$ and $\Delta CWTVD$ require a common set of possible origin-destination pairs to be comparable, no valid comparison is possible between the local clean and mapping quality subsets.
 
 ## Local Model {#sec-local}
 
@@ -516,25 +537,23 @@ resolving-power property is what licenses trusting CWTVD's answer to that
 question when it parts from KL's.
  
 We compare peaks rather than improvement at any single $\varepsilon$
-because only the ratio $C_{ij}/\varepsilon$ enters $P^\star$. The scale of
-a cost matrix and the value of $\varepsilon$ are therefore not separately
-identified, and a metric's improvement at a fixed $\varepsilon$ has no
-interpretation without an implicit normalization. The peak is the
-scale-free summary that removes this ambiguity. Each candidate traces an
+because of the same non-identification that motivated the grid above:
+only the ratio $C_{ij}/\varepsilon$ enters $P^\star$, so a metric's
+improvement at a fixed $\varepsilon$ has no interpretation without an
+implicit normalization, and the peak is the scale-free summary that
+removes the ambiguity. Each candidate traces an
 interior maximum over the grid: at low $\varepsilon$ the plan
 over-concentrates on the diagonal relative to the observed move rate, and
 as $\varepsilon \to \infty$ it diffuses to the independence baseline
 $P_{ij} = a_i b_j$, where improvement returns to zero. The grid from $0.1$
 to $1000$ is wide enough that all three candidates peak in its interior on
 both criteria, with the uninformative tails visible at each end. Binary
-peaks in the interior too. Having no off-diagonal structure to spend
-entropy on, its only lever is the aggregate stay/move split, so its peak
-sits at the $\varepsilon$ where the diffusion of mass off the diagonal
-matches the empirical move rate, and it peaks earlier than skill and
-hierarchy, which keep improving as falling $\varepsilon$ sharpens an
-off-diagonal allocation that pays off. Binary is in this sense a
-one-parameter stay/move model whose peak location encodes the mobility
-rate, not a featureless benchmark.
+peaks in the interior too. As the one-parameter stay/move model described
+in @sec-cost-metrics, its only lever is the aggregate stay/move split, so
+its peak sits at the $\varepsilon$ where the diffusion of mass off the
+diagonal matches the empirical move rate, and it peaks earlier than skill
+and hierarchy, which keep improving as falling $\varepsilon$ sharpens an
+off-diagonal allocation that pays off.
  
 The winner of the race is the cost matrix whose peak exceeds the
 runner-up's by at least 10\% on both criteria at once. Requiring both is
@@ -582,7 +601,7 @@ localizes how a metric misfits, and breaking it in favour of one criterion
 by fiat would discard exactly the signal the two criteria were chosen to
 expose.
 
-### Out-of-Regime Falsification
+### Out-of-Regime Falsification {#sec-local-falsification}
 
 
 The out-of-regime criterion is stated against independence, on the
@@ -670,28 +689,33 @@ baseline from below without crossing it, improving as $\varepsilon$ grows
 only because diffusion toward independence is the one thing that helps a
 metric whose geometry points the wrong way. The online companion shows this
 under a binary data-generating process, where skill and hierarchy stay
-below zero on $\Delta CWTVD$ across the grid. Their $\Delta KL$ does not
-share the shape: it carries the same diagonal credit binary does and rises
-to a small positive peak at moderate $\varepsilon$, which is why the
-out-of-regime criterion rests on $\Delta CWTVD$ rather than on both
-measures.
+below zero on $\Delta CWTVD$ across the grid while their $\Delta KL$, for
+the diagonal-credit reason given above, rises instead to a small positive
+peak at moderate $\varepsilon$ --- which is why the out-of-regime criterion
+rests on $\Delta CWTVD$ rather than on both measures.
  
 The sub-regime models are falsified the same way, with one exception. In
 regime each sub-regime is expected to produce a metric that peaks above
 independence on both measures, and out of regime that metric's $\Delta
 CWTVD$ peak is predicted to fall below independence. We apply this to the
-Skill and Hierarchy sub-regimes only. The Binary sub-regime is exempt for a reason internal to
-its own hypothesis. Its in-regime claim is that no distance geometry
-governs, so there is no claim that distance ceases to govern to test out
-of regime. The lock-in mechanism that defines the sub-regime is moreover
-expected to empty its out-of-regime cell, because workers already in a
-high-OES occupation rarely acquire a new highest attainment, since
-occupation-specific human capital is reached through a single credentialing
-pipeline and confers no incentive to re-credential. If that cell proves
-non-empty, the non-emptiness itself falsifies the lock-in premise. The
-out-of-regime content of the Binary hypothesis otherwise lies on the entry
-side and is carried by the destination-OES coefficient in the non-local
-specificity regression rather than by a horse race.
+Skill and Hierarchy sub-regimes only. The Binary sub-regime is exempt from
+the distance-based out-of-regime test for a reason internal to its own
+hypothesis, and the exemption does not depend on what its out-of-regime
+cell turns out to contain. Its in-regime claim is that no distance geometry
+governs, so it never generates a prediction that distance ceases to govern
+out of regime; there is no distance bet to be caught making wrongly, with
+or without movers in the cell. Separately, the lock-in mechanism that
+defines the sub-regime predicts that cell is near-empty, because workers
+already in a high-OES occupation rarely acquire a new highest attainment,
+since occupation-specific human capital is reached through a single
+credentialing pipeline and confers no incentive to re-credential. A
+non-empty cell therefore falsifies the lock-in premise without thereby
+reinstating a distance test the hypothesis never licensed: the
+distance-based leg stays inapplicable, and the non-emptiness is read as
+evidence against lock-in in its own right. % RICH DECISION POINT: conservative branch — non-empty cell falsifies lock-in but does NOT reopen the out-of-regime distance test. Alternative: let a non-empty cell reinstate the Skill/Hierarchy-style below-independence test on those movers. Swap if you want the riskier pre-registration.
+The out-of-regime content of the Binary hypothesis otherwise lies on the
+entry side and is carried by the destination-OES coefficient in the
+non-local specificity regression rather than by a horse race.
 
 ## Non-Local Model {#sec-non_local}
 
@@ -700,7 +724,7 @@ The non-local model estimates the conditional-on-positive relationship between h
 The theoretical mechanism is symmetric: a wormhole jump requires both an entrance and an exit. A specific education (high EOS) channels workers toward a narrow set of occupations that would otherwise be unreachable; a specific destination occupation (high OES) draws selectively from particular credential pipelines. Neither alone is sufficient for a discontinuous jump — a specific education without a specific destination lands the worker somewhere generic (e.g. Optometry graduate *not* working as Optometrist), and a specific destination without a specific education implies arrival via general credentials (e.g. Ferdinand Waldo Demara). The long-distance jumps that characterise wormhole travel occur only when both ends are specific simultaneously. A bilinear $\text{EOS}\times\text{OES}$ term fails to encode this: with mean-centred measures the product is equally large and positive when both lie well below average, spuriously predicting long jumps for the least-specific movers. We therefore use a rectified interaction, $\max(\text{EOS},0)\cdot\max(\text{OES},0)$, which is non-zero only when both specificities are strictly positive, so the multiplicative term fires in the high–high region alone; this rectified interaction is the theoretically primary coefficient. We estimate three specifications — two univariate models and a joint model with both main effects and the rectified interaction — and report the Spearman correlation between EOS and OES as a diagnostic.
 
 Whether the joint model can separately identify entrance and exit intensity depends on the worker-level correlation between EOS and OES, which governs how densely the high–high region is populated — the only region from which the rectified interaction is identified. When the two measures are highly correlated, that region collapses toward the diagonal and $\max(\text{EOS},0)\cdot\max(\text{OES},0)$ approximates a rectified quadratic in a single specificity index, so the main effects and the interaction can no longer be cleanly decomposed; the same correlation that populates the region enough to identify the interaction also blurs the separation of the two main effects within it. The univariate models remain interpretable regardless of the correlation — each estimates the reduced-form association between a single specificity measure and distance traveled. A low correlation supports a structural reading of the joint model's coefficients; a high correlation limits interpretation to the univariate models, with the joint model reported for completeness. The correlation is itself informative about the structure of education-occupation matching in the Canadian labour market, independent of its implications for identification.
-Let $y_{ij}$ denote the outcome — $\log(d_{ij})$ in skill space, estimated by OLS, or the cross-silo indicator, estimated by LPM — and let $\bar{d}_j$ be the destination's mean inbound distance under the independence baseline (its average distance from a randomly drawn origin; for the cross-silo outcome, the baseline probability that a random origin lies outside $j$'s broad group).
+Let $y_{ij}$ denote the outcome — $\log(d_{ij})$ in skill space, estimated by OLS, or the cross-silo indicator, estimated by LPM — and let $\bar{d}_j$ be the destination's mean inbound distance under the independence baseline (its average distance from a randomly drawn origin; for the cross-silo outcome, the baseline probability that a random origin lies outside $j$'s broad group). The remoteness control is defined in the same space as the outcome it accompanies, so it swaps with the outcome: skill-space mean inbound distance for the OLS specification, baseline cross-silo probability for the LPM. This matters for the immunity claim above. The cross-silo specification depends on the NOC taxonomy through both its outcome and its control and so touches the O\*NET crosswalk at no point, whereas the skill specification is crosswalk-dependent on both sides.
 
 \begin{equation}
 y_{ij} = \alpha + \beta_1\text{EOS} + \gamma\bar{d}j + \delta_i + \varepsilon{ij}
@@ -721,9 +745,9 @@ Prior to estimation, EOS and OES are standardized to mean zero and unit variance
 
 All specificity coefficients are expected to be non-negative, with the rectified interaction $\beta_5$ the primary prediction. Under strict complementarity the main effects $\beta_3$ and $\beta_4$ are expected to be weak relative to $\beta_5$: a specific education whose realised destination is generic, or a general education reaching a specific destination, should travel little farther than a wholly unspecific move, so large main effects would instead indicate that specificity lengthens jumps additively rather than only in combination. The remoteness coefficient $\gamma$ is expected positive.
 
-Age might seem a natural control given the well-documented decline in occupational mobility with age [@topel1992job], but we exclude it from the main specification.  Conditional on the origin occupation, age's association with jump distance reflects a life-cycle pattern of mobility that is part of the wormhole mechanism, not a confound of it; conditioning on age would partial out legitimate variation. The separate channel by which age proxies starting-occupation quality is already absorbed by the origin fixed effects $\delta_i$. We report a specification including age as a robustness check, and expect it to attenuate the specificity coefficients and have a negative coefficient — consistent with older non-local movers starting closer to their destination.
+Age is excluded from the specification. The well-documented decline in occupational mobility with age [@topel1992job] is, for jump distance, a life-cycle composition effect that operates through the 2016 origin occupation: workers who acquire a new attainment later in life tend to start from a higher skill and hierarchy position than those completing the same credential early, so they sit closer to the credential's destination and travel a shorter measured distance. That channel is a property of where a worker starts, not of the wormhole mechanism, and the origin fixed effects $\delta_i$ absorb it along with every other origin-level determinant of distance. A separate age term is therefore neither needed nor clean: conditional on origin it carries no signal the mechanism predicts, and because age plausibly correlates with the specificity measures through selection into particular credential types, including it risks partialling out legitimate specificity variation. We make no prediction about an age coefficient.
 
-The model is evaluated across four samples as described in Section \ref{sec-data}, with results reported for both the skill and cross-silo outcomes. The within-$R^2$ --- the share of variance in the outcome explained by the specificity measures after partialling out origin fixed effects and destination remoteness --- is not expected to be large in absolute terms: transition distance is inherently noisy and EOS and OES are aggregate measures that capture only the systematic component of specificity-driven mobility. The relevant comparison is the ordering of within-$R^2$ across samples, not its absolute level.
+The model is evaluated across four samples as described in @sec-data, with results reported for both the skill and cross-silo outcomes. The within-$R^2$ --- the share of variance in the outcome explained by the specificity measures after partialling out origin fixed effects and destination remoteness --- is not expected to be large in absolute terms: transition distance is inherently noisy and EOS and OES are aggregate measures that capture only the systematic component of specificity-driven mobility. The relevant comparison is the ordering of within-$R^2$ across samples, not its absolute level.
 
 The positive distance restriction removes many apprenticeship completers, since NOC makes no distinction between apprentices and journeypeople of the same occupation --- those already working in the target trade in 2016 show zero measured distance upon completion and are excluded by construction. Rather than threatening identification, this restriction improves measurement validity: the excluded zeros reflect occupation coarseness rather than true immobility, and their inclusion would introduce noise into the outcome variable. Workers who complete an entire apprenticeship program within the five-year window from a different 2016 occupation remain in the sample, and for these workers the wormhole mechanism is cleanly observable. The limitation is one of external validity rather than internal validity: estimates do not generalise to within-trade apprenticeship completers, whose human capital increment is real but invisible to NOC.
 
@@ -967,7 +991,7 @@ Above bachelor (Master's, PhD, MD, etc.) & 1 & 1, 2, 0 \\
 
 ## CWTVD resolving power and scoring-matrix robustness  {#sec-AC}
 
-Section~\ref{sec:local-model} adjudicates the horse race on two criteria of
+@sec-local adjudicates the horse race on two criteria of
 equal standing, $\Delta KL$ and $\Delta CWTVD$, and a win requires
 leading on both. The role of $\Delta CWTVD$ as a co-equal criterion
 rests on a property established here by simulation: among the two
@@ -977,9 +1001,10 @@ that property, states why it can be established only by simulation, and
 then checks that the resulting sub-regime rankings do not depend on the
 particular cost matrix used to score $\Delta CWTVD$.
  
-Figure~\ref{fig:mixture-sweep} plots improvement relative to independence
+The online companion plots improvement relative to independence
 against $\varepsilon$ for each candidate metric, across three mixed
-data-generating processes (columns) and both scoring criteria (rows). Read
+data-generating processes (columns) and both scoring criteria (rows).% RICH FIX REF: was \ref{fig:mixture-sweep} (companion figure, no in-doc target) — replace with the companion's actual figure/anchor name.
+Read
 down each column: at a $75/25$ skill/hierarchy mixture the peak gap between
 the skill and hierarchy curves is wider under $\Delta CWTVD$ (top row)
 than under $\Delta KL$ (bottom row); at $25/75$ the ordering reverses and
@@ -990,36 +1015,26 @@ from balance and shrinking to its minimum at balance. $\Delta KL$, by
 contrast, holds the two curves close to coincident across all three
 mixtures, resolving the imbalanced cases only weakly. A second difference
 appears at the benchmark: under every mixture the $\Delta KL$ curve for
-$C_{\mathrm{binary}}$ retains a positive tail well past its peak, because
-$C_{\mathrm{binary}}$ is rewarded for reproducing the aggregate stay/move
-split irrespective of where movers go; $\Delta CWTVD$ strips that
-geometry-blind credit out and the $C_{\mathrm{binary}}$ tail collapses to
+$C_{\mathrm{binary}}$ retains a positive tail well past its peak, the same
+geometry-blind credit for the aggregate stay/move split that drives the
+out-of-regime KL behaviour in @sec-local-falsification; $\Delta CWTVD$
+strips that credit out and the $C_{\mathrm{binary}}$ tail collapses to
 the independence line. Both features point the same way:
 $\Delta CWTVD$ separates the two correlated geometries more sharply and
 denies the benchmark credit it has not earned geometrically.
  
 
 This resolving-power property is established under known data-generating
-processes, in the same sense that consistency or test power is established
-for an estimator rather than read off the sample to which the estimator is
-later applied. It can be established \emph{only} that way, and not
-corroborated on the estimation data, for a structural reason. The property
-is a statement about the mapping from a known true mixture to the measured
-gap between criteria; verifying it requires holding the truth fixed and
-reading off the measurement, which presupposes knowing the truth. The
-estimation sample delivers a single transition matrix drawn from one
-unknown mixture and so yields a single gap, with no reference mixture
-against which its magnitude could be judged. There is therefore no
-empirical quantity, in this sample or in any single observed labour
-market, that could confirm or disconfirm the property; the Monte Carlo is
-not preliminary evidence awaiting empirical corroboration but the complete
-justification the claim admits. The simulation validates the instrument; the
-estimation sample takes the measurement. We accordingly make no prediction
-that the Canadian results will "confirm" the advantage of
-$\Delta CWTVD$---the data answers a different question, namely which
-geometry governs Canadian mobility, and the resolving-power property is
-what licenses trusting $\Delta CWTVD$'s answer when it parts from
-$\Delta KL$'s.
+processes rather than read off the estimation sample, for the structural
+reason given in @sec-local: the property is a statement about the mapping
+from a known true mixture to the measured gap between criteria, and a
+single observed labour market delivers one gap drawn from one unknown
+mixture, with no reference mixture against which its magnitude could be
+judged. The Monte Carlo is therefore the complete justification the claim
+admits, not preliminary evidence awaiting empirical corroboration. The
+figures here substantiate the property; @sec-local states what follows for
+trusting $\Delta CWTVD$ when it parts from $\Delta KL$ on the Canadian
+data.
  
 
 The scoring matrix $C$ used in $\Delta CWTVD$ is the arithmetic mean of
@@ -1028,10 +1043,10 @@ is constant off-diagonal, the blend's cell-level weighting is structurally
 determined by $C_{\mathrm{skill}}$ and $C_{\mathrm{hierarchy}}$ regardless
 of aggregation method; the relevant check is therefore whether the
 sub-regime rankings survive when each candidate matrix is used as the sole
-judge. Figure~\ref{fig:cwtvd-judge} plots $\Delta CWTVD$ against
+judge. The companion plots $\Delta CWTVD$ against
 $\varepsilon$ for all three metrics, by sub-regime (columns) and scoring
 matrix (rows), on the in-regime subset; diagonal panels (a plan scored
-under its own cost matrix) are omitted. The $C_{\mathrm{skill}}$ and
+under its own cost matrix) are omitted.% RICH FIX REF: was \ref{fig:cwtvd-judge} (companion figure, no in-doc target) — replace with the companion's actual figure/anchor name. The $C_{\mathrm{skill}}$ and
 $C_{\mathrm{hierarchy}}$ rows are the substantive robustness checks: if the
 predicted winner in each sub-regime leads under the blended judge, it
 should also lead under the opposing geometrically informative judge. The
