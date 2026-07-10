@@ -35,6 +35,7 @@ noc_edu_spec  <- read_rds(here("out", "noc_edu_spec.rds"))
 calibration      <- read_rds(here("out", "calibration.rds"))
 skills_mat       <- read_rds(here("out", "skill_dist_raw.rds"))
 sim_score_plots <- read_rds(here("out","sim_score_plots.rds"))
+compare_lift <- read_rds(here("out","compare_lift.rds"))
 
 skills_hc      <- hclust(as.dist(skills_mat), method = "average")
 skills_ord     <- skills_hc$order
@@ -287,68 +288,6 @@ noc_edu_spec |>
   my_dt()
 ```
 
----
-
-## Education's Occupation Specificity {#sec-educ-spec}
-
-### Construction
-
-Education's occupation specificity is constructed symmetrically to occupation's education
-specificity, conditioning on education rather than occupation.
-
-**Step 1 — Overall Occupational Distribution.** We compute the aggregate occupational
-distribution across all educated workers, serving as the baseline absent conditioning on
-field of study.
-
-**Step 2 — Distribution Within Each Education.** For each (CIP × attainment) cell we
-compute total graduates $T$, occupation shares $p$, and compare to the aggregate
-occupational distribution $p_0$ using KL divergence.
-
-**Step 3 — Remove Size Effect.** As with occupations, small cohorts mechanically inflate
-divergence. We residualize $\log(\text{KL})$ on $\log(T)$:
-
-```{r educ-spec-code, echo=TRUE, eval=FALSE}
-fit_kl <- lm(log(KL) ~ log(T), data = educ_specificity)
-
-educ_specificity <- educ_specificity |>
-  mutate(specificity = log(KL) - predict(fit_kl))
-```
-
-The resulting index measures how narrowly a field of study feeds into occupations,
-independent of cohort size. Professional and doctoral fields exhibit consistently high
-occupational concentration; below that threshold, specificity varies substantially within
-attainment levels, confirming that educational level alone does not determine pipeline
-concentration.
-
-### Specificity vs. Cohort Size {#sec-educ-spec-plot}
-
-High specificity indicates few occupational pathways from the education. Residualized
-specificity is not correlated with log cohort size
-(Pearson = `r spec_pear`, Spearman = `r spec_spear`).
-
-```{r educ-spec-plot}
-spec_plotly <- plotly::ggplotly(spec_plt)
-
-for (i in seq_along(spec_plotly$x$data)) {
-  spec_plotly$x$data[[i]]$name <- gsub(",1", "", spec_plotly$x$data[[i]]$name)
-  spec_plotly$x$data[[i]]$name <- gsub("^\\(|\\)$", "", spec_plotly$x$data[[i]]$name)
-}
-
-spec_plotly |>
-  plotly::layout(
-    legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.2)
-  )
-```
-
-### Education Specificity Rankings {#sec-educ-spec-table}
-
-```{r educ-spec-table}
-educ_specificity |>
-  select(highest, cip, specificity) |>
-  arrange(desc(specificity)) |>
-  my_dt()
-```
-
 ## The $\varepsilon$ sweep and the cherry-picking problem {#sec-simulation}
 
 Suppose that rather than evaluating across a grid of $\varepsilon$
@@ -401,4 +340,51 @@ In the plot below, the peak score gap between the two leading cost metrics under
 #| fig-height: 8
 sim_score_plots$global_measures
 ```
+
+
+## Destination lift by broad group {#sec-lift-by-silo}
+
+The non-local model treats a high-lift move as one into an occupation a
+credential distinctively feeds, and argues that such destinations are
+concentrated in the credential-dense skilled silos rather than in the
+generic-entry silos. The following plot substantiates that concentration
+for the two endpoint cases: natural and applied sciences (NOC broad group 2),
+a credential-dense silo, and sales and service (NOC broad group 6), the
+generic-entry silo used as the illustration in the main text.
+
+```{r, warning=FALSE}
+#| fig-width: 12
+#| fig-height: 8
+compare_lift
+```
+
+The two empirical CDFs of destination lift cross once, near log lift zero, and
+separate in the upper tail. Above the crossing the sales-and-service curve lies
+above the sciences curve throughout, meaning a larger share of its
+destination cells fall below any given high-lift threshold: at log lift 2,
+roughly 95 percent of sales-and-service cells sit below, against roughly 80
+percent for sciences, so sciences carries several times the high-lift tail
+mass. The sales-and-service curve reaches one by log lift three or four, while
+the sciences curve approaches one only past five. In words, sales and service
+has almost no high-lift destinations, whereas sciences retains a substantial
+high-lift tail of genuine credential pipelines.
+
+The separation is real but moderate: the two distributions share a mode near
+log lift zero and the crossing sits low, so the claim the figure supports is
+the narrower one the mechanism requires, that the generic-entry silo has a
+materially thinner high-lift tail, not that the two silos are disjoint. The few
+high-lift destinations sales and service does contain are the licensed and
+skilled-service occupations named in the main text.
+
+Two features of the construction bear on reading the figure. Lift here is the
+raw ratio, not size-residualized, so part of the tail difference reflects that
+sciences occupations are on average rarer than sales-and-service occupations,
+which mechanically admits higher lift through the smaller denominator; the
+figure is therefore descriptive of the destination-lift distribution rather
+than a size-adjusted measure of credential specificity. And both curves are
+computed on the education--occupation cells that clear the reliability floor of
+30 (see paper), so the tail is measured pipelines, not thin-cell noise.
+
+
+
 

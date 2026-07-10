@@ -18,7 +18,7 @@ epsilon <- 10^seq(-1, 3, .1) #the grid to explore
 skill_dist <- read_rds(here("out","skill_dist.rds"))
 hier_dist <- read_rds(here("out","hier_dist.rds"))
 binary_dist <- read_rds(here("out","binary_dist.rds"))
-score_dist <- (hier_dist+skill_dist+binary_dist)/3 #average of the 3 distances for scoring
+score_dist <- (hier_dist+skill_dist+binary_dist)/3 #average of the 3 distances (falsification only now)
 #get the noc list....
 
 noc_list <- tibble(noc_plus_title=colnames(skill_dist))|>
@@ -150,7 +150,9 @@ global_model_fits <- crossing(
                                 "DGP: 50% Skill / 50% Hierarchy",
                                 "DGP: 25% Skill / 75% Hierarchy")))|>
   select(dgp, epsilon, C, `Cost Matrix`, P_obs, P_hat, P_ind)|>
-  mutate(score_dist = list(score_dist))
+  mutate(hier_dist = list(hier_dist),
+         skill_dist = list(skill_dist)
+         )
 
 write_rds(global_model_fits, here("out", "global_model_fits.rds"))
 

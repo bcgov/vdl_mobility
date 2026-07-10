@@ -3,8 +3,9 @@ library(here)
 library(bcgovpond) #to install pak::pak("bcgov/bcgovpond")
 library(janitor)
 library(patchwork)
-library(conflicted)
+library(igraph)
 library(stringr)
+library(conflicted)
 conflicts_prefer(dplyr::count)
 conflicts_prefer(dplyr::filter)
 #functions------------------------------------
@@ -13,6 +14,12 @@ source(here("R", "other.R"))
 #create distance matrices-------------------------------------------
 
 mapping <- read_csv("https://raw.githubusercontent.com/bcgov/onet-noc2021-crosswalk/main/output/3.0.0/onet_to_noc2021_mapping.csv")
+
+mapping_diagnostics <- read_csv("https://raw.githubusercontent.com/bcgov/onet-noc2021-crosswalk/main/output/3.0.0/diagnostics.csv")
+
+poorly_mapped <- mapping_diagnostics|>
+  slice_min(sort_score, n=50)|>
+  pull(noc_plus_title)
 
 mapped_nocs <- mapping|>
   select(noc_plus_title)|>
@@ -66,6 +73,29 @@ noc_coords <- onet_pca$x[, 1:retain_num_pca]#trim redundant
 
 skill_dist_raw<- dist(noc_coords, method = "euclidean")|>
   as.matrix()
+
+#how many off diagonal 0's (NOC resolution exceeds ONET)
+
+zeros <- skill_dist_raw|>
+  as.data.frame()|>
+  rownames_to_column("origin")|>
+  pivot_longer(cols=-origin, names_to = "destination", values_to = "distance")|>
+  filter(origin!=destination,
+         distance==0)
+
+g <- graph_from_data_frame(zeros[, c("origin", "destination")], directed = FALSE)
+comp <- components(g)
+
+table(comp$csize)          # size distribution — the thing you actually want
+comp$no                    # how many distinct twin-clusters
+max(comp$csize)
+
+big <- which.max(comp$csize)              # id of the largest cluster
+big_zero_dist_nocs <- tibble(noc_plus_title=names(comp$membership)[comp$membership == big])
+
+
+
+intersect(poorly_mapped, zeros$destination)
 
 #hierarchical distance--------------------------------------------
 hier_dist_raw_long<- crossing(origin=mapped_nocs$noc_plus_title,
@@ -208,81 +238,148 @@ noc_edu_spec <- noc_edu_spec |>
   mutate(
     specificity = log(KL) - predict(noc_edu_spec_fit),
     TEER = str_sub(noc, 2, 2),
-    `Based on TEER` = case_when(TEER %in% c(0, 5)~"Skill",
+    `Based on TEER` = case_when(TEER %in% c(0, 4, 5)~"Skill",
                            TEER  == 1 ~ "Binary",
                            TRUE ~"Hierarchy"
                            ),
     `Based on Occupation Education Specificity` = case_when(
       rank(specificity) > (504 - 96) ~ "Binary",
-      rank(specificity) <= 86        ~ "Skill",
+      rank(specificity) <= 180        ~ "Skill",
       TRUE                           ~ "Hierarchy")
+  )
+
+#lift--------------------------------------------------
+
+
+cells <- cip_noc|>
+  unite(education, highest, cip, sep=": ")|>
+  rename(count=value,
+         occupation=noc)
+
+# education totals T_e  (denominator of the conditional)
+edu_tot <- cells |>
+  group_by(education) |>
+  summarise(T_e = sum(count), .groups = "drop")
+
+# occupation marginal P(n)  (the prior AND the lift denominator)
+# computed from the SAME table's grand total
+grand <- sum(cells$count)
+occ_marg <- cells |>
+  group_by(occupation) |>
+  summarise(P_n = sum(count) / grand, .groups = "drop")
+
+# assemble and shrink
+alpha <- 15   # prior strength, fixed in advance
+
+lift_tbl <- cells |>
+  left_join(edu_tot,  by = "education") |>
+  left_join(occ_marg, by = "occupation") |>
+  mutate(
+    # Dirichlet-smoothed P(n|e) with prior = marginal P_n
+    P_n_given_e = (count + alpha * P_n) / (T_e + alpha),
+    lift        = P_n_given_e / P_n,
+    log_lift = log(lift)
+  )|>
+  filter(count >= 30)|>
+  arrange(desc(lift))
+
+slice_max(lift_tbl, order_by = log_lift)|>view()
+slice_min(lift_tbl, order_by = log_lift)|>view()
+
+lift_tbl|>
+  filter(str_detect(education, "40.04 Atmospheric sciences and meteorology"))|>
+  view()
+
+lift_tbl |> filter(str_detect(education, "46.03"), str_detect(occupation, "31301"))   # installer education -> RN occupation
+lift_tbl |> filter(str_detect(education,"31301"), str_detect(occupation,"46.03"))   # only meaningful if NOC codes can appear as education — they can't
+
+meteo <- lift_tbl|>
+  filter(str_detect(education,"40.04 Atmospheric sciences and meteorology"))
+
+compare_lift <- lift_tbl|>
+  mutate(broad=str_sub(occupation,1,1))|>
+  filter(broad %in% c(6,2))
+
+ggplot(compare_lift, aes(x=log_lift, y=after_stat(density), fill=broad))+geom_histogram(alpha=.5)
+
+
+compare_lift <- ggplot(compare_lift, aes(x = log_lift, colour = broad)) +
+  stat_ecdf(linewidth = 1) +
+  scale_colour_discrete(
+    labels = c("2" = "Sciences (NOC 2)",
+               "6" = "Sales & service (NOC 6)")
+  ) +
+  labs(
+    x = "ln(lift)",
+    y = "Cumulative share of destination cells",
+    colour = "Broad group"
   )
 
 #education's occupation specificity----------------------
 
-noc_props <- cip_noc |>
-  summarise(total = sum(value), .by = noc) |>
-  mutate(p0 = total / sum(total)) |>
-  select(noc, p0) |>
-  tibble::deframe()
-
-edu_noc_spec <- cip_noc |>
-  filter(value > 0) |>
-  add_count(highest, cip, wt = value, name = "T") |>
-  mutate(
-    p  = value / T,
-    noc_props = noc_props[noc],
-    kl_part = p * log(p / noc_props)
-  ) |>
-  summarise(
-    KL = sum(kl_part),
-    T  = first(T),
-    .by = c(highest, cip)
-  )
-
-spec_fit_kl <- lm(log(KL) ~ log(T), data = edu_noc_spec)
-
-edu_noc_spec <- edu_noc_spec |>
-  mutate(
-    specificity = log(KL) - predict(spec_fit_kl)
-  ) |>
-  mutate(attain_bin = case_when(
-    highest %in% c(
-      "Postsecondary certificate, diploma or degree",
-      "Postsecondary certificate or diploma below bachelor level",
-      "Apprenticeship or trades certificate or diploma",
-      "Non-apprenticeship trades certificate or diploma",
-      "Apprenticeship certificate",
-      "College, CEGEP or other non-university certificate or diploma",
-      "University certificate or diploma below bachelor level"
-    ) ~ "Non-university postsecondary",
-
-    highest %in% c(
-      "Bachelor's degree",
-      "Bachelor’s degree or higher"
-    ) ~ "Bachelor’s",
-
-    highest == "University certificate or diploma above bachelor level" ~
-      "Post-bachelor certificate",
-
-    highest == "Master's degree" ~ "Master’s",
-
-    highest %in% c(
-      "Degree in medicine, dentistry, veterinary medicine or optometry",
-      "Earned doctorate"
-    ) ~ "Professional / Doctorate"
-  ),
-  attain_bin = factor(
-    attain_bin,
-    levels = c(
-      "Non-university postsecondary",
-      "Bachelor’s",
-      "Post-bachelor certificate",
-      "Master’s",
-      "Professional / Doctorate"
-    ),
-    ordered = TRUE
-  ))
+# noc_props <- cip_noc |>
+#   summarise(total = sum(value), .by = noc) |>
+#   mutate(p0 = total / sum(total)) |>
+#   select(noc, p0) |>
+#   tibble::deframe()
+#
+# edu_noc_spec <- cip_noc |>
+#   filter(value > 0) |>
+#   add_count(highest, cip, wt = value, name = "T") |>
+#   mutate(
+#     p  = value / T,
+#     noc_props = noc_props[noc],
+#     kl_part = p * log(p / noc_props)
+#   ) |>
+#   summarise(
+#     KL = sum(kl_part),
+#     T  = first(T),
+#     .by = c(highest, cip)
+#   )
+#
+# spec_fit_kl <- lm(log(KL) ~ log(T), data = edu_noc_spec)
+#
+# edu_noc_spec <- edu_noc_spec |>
+#   mutate(
+#     specificity = log(KL) - predict(spec_fit_kl)
+#   ) |>
+#   mutate(attain_bin = case_when(
+#     highest %in% c(
+#       "Postsecondary certificate, diploma or degree",
+#       "Postsecondary certificate or diploma below bachelor level",
+#       "Apprenticeship or trades certificate or diploma",
+#       "Non-apprenticeship trades certificate or diploma",
+#       "Apprenticeship certificate",
+#       "College, CEGEP or other non-university certificate or diploma",
+#       "University certificate or diploma below bachelor level"
+#     ) ~ "Non-university postsecondary",
+#
+#     highest %in% c(
+#       "Bachelor's degree",
+#       "Bachelor’s degree or higher"
+#     ) ~ "Bachelor’s",
+#
+#     highest == "University certificate or diploma above bachelor level" ~
+#       "Post-bachelor certificate",
+#
+#     highest == "Master's degree" ~ "Master’s",
+#
+#     highest %in% c(
+#       "Degree in medicine, dentistry, veterinary medicine or optometry",
+#       "Earned doctorate"
+#     ) ~ "Professional / Doctorate"
+#   ),
+#   attain_bin = factor(
+#     attain_bin,
+#     levels = c(
+#       "Non-university postsecondary",
+#       "Bachelor’s",
+#       "Post-bachelor certificate",
+#       "Master’s",
+#       "Professional / Doctorate"
+#     ),
+#     ordered = TRUE
+#   ))
 
 write_rds(skill_dist_raw, here("out", "skill_dist_raw.rds"))
 write_rds(k_vs_spearman, here("out", "k_vs_spearman.rds"))
@@ -292,7 +389,7 @@ write_rds(skill_dist, here("out", "skill_dist.rds"))
 write_rds(hier_dist, here("out", "hier_dist.rds"))
 write_rds(dist_cdfs, here("out", "dist_cdfs.rds"))
 write_rds(noc_edu_spec, here("out", "noc_edu_spec.rds"))
-write_rds(edu_noc_spec, here("out", "edu_noc_spec.rds"))
+write_rds(compare_lift, here("out", "compare_lift.rds"))
 write_rds(calibration,  here("out", "calibration.rds"))
 
 

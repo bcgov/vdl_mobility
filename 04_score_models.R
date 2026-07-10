@@ -16,9 +16,12 @@ global_measures <- global_model_fits|>
   mutate(KL_global_hat = map2_dbl(P_obs, P_hat, kl_score),
          KL_global_ind = map2_dbl(P_obs, P_ind, kl_score),
          `relative KL improvement` = (KL_global_ind - KL_global_hat) / KL_global_ind,
-         CWTVD_global_hat = pmap_dbl(list(P_obs, P_hat, score_dist), cwtvd),
-         CWTVD_global_ind = pmap_dbl(list(P_obs, P_ind, score_dist), cwtvd),
-         `relative CWTVD improvement` = (CWTVD_global_ind - CWTVD_global_hat) / CWTVD_global_ind
+         CWTVD_global_hat_hier = pmap_dbl(list(P_obs, P_hat, hier_dist), cwtvd),
+         CWTVD_global_ind_hier = pmap_dbl(list(P_obs, P_ind, hier_dist), cwtvd),
+         `relative CWTVD improvement (Hierarchy)` = (CWTVD_global_ind_hier - CWTVD_global_hat_hier) / CWTVD_global_ind_hier,
+         CWTVD_global_hat_skill = pmap_dbl(list(P_obs, P_hat, skill_dist), cwtvd),
+         CWTVD_global_ind_skill = pmap_dbl(list(P_obs, P_ind, skill_dist), cwtvd),
+         `relative CWTVD improvement (Skill)` = (CWTVD_global_ind_skill - CWTVD_global_hat_skill) / CWTVD_global_ind_skill
          )|>
   select(dgp, epsilon, `Cost Matrix`, contains("relative"))|>
   pivot_longer(cols=contains("relative"),names_to = "Measure")
@@ -33,7 +36,7 @@ sim_score_plots$global_measures <- global_measures|>
   scale_x_continuous(trans="log10")+
   scale_y_continuous(transform = scales::pseudo_log_trans(sigma = .1, base = 2),
                      labels = scales::label_number())+
-  facet_grid(Measure~dgp)+
+  facet_grid(Measure~dgp, scales="free_y")+
   labs(title="Improvement relative to independence by \u03b5 across DGPs and Measure",
        subtitle="1 is perfect fit, 0 no improvement over independence, negative worse than independence",
        x= "\u03b5",
