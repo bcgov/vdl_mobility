@@ -90,13 +90,15 @@ The analysis requires individual-level transitions between occupations over time
 
 The project relies on Census 2016-2021 Longitudinal File (CEN_2016_2021), which allow observation of individuals’ occupations at two points in time. This is essential to construct the origin–destination transition matrix and analyze mobility patterns.
 
-## Dataset(s) required 
+## Dataset(s) required  **(Updated)**
 
-- Census 2016-2021 Longitudinal File (CEN_2016_2021)  
+- Census 2016-2021 Longitudinal File (CEN_2016_2021) 
+
+- 2016 and 2021 census master files (as required by CEN_2016_2021: these files will not be directly used in analysis).
 
 - Access to all linked records, including those with missing values for the variables of interest are required.
 
-### Sample description (Updated)
+### Sample description
 
 -   Unit of analysis: individual workers
 -   We create a  *measurement complete* subset of the linked data where occupation, field of study, highest educational attainment, class of worker, and **age** are all observed in both 2016 and 2021.
@@ -108,7 +110,7 @@ The project relies on Census 2016-2021 Longitudinal File (CEN_2016_2021), which 
 
 -   National
 
-### Variable list (Updated)
+### Variable list 
 
 Variables expected to be used include:
 

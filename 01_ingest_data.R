@@ -2,7 +2,18 @@
 #' click add remove data
 #' geography==canada
 #' age==total
-#' highest certificate==select all items
+#' highest certificate:
+#' (
+#' Non-apprenticeship trades certificate or diploma,
+#' Apprenticeship certificate,
+#' College, CEGEP or other non-university certificate or diploma,
+#' University certificate or diploma below bachelor level,
+#' Bachelor's degree,
+#' University certificate or diploma above bachelor level,
+#' Degree in medicine, dentistry, veterinary medicine or optometry,
+#' Master's degree,
+#' Earned doctorate
+#' )
 #' major field== all 4 digit
 #' noc == 5 digit
 #' gender==total

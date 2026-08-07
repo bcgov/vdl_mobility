@@ -195,8 +195,7 @@ cip_noc <- bcgovpond::read_view("9810040401.csv") |>
   select(highest = starts_with("Highest"),
          cip     = starts_with("Major"),
          noc     = starts_with("Occupation"),
-         value   = VALUE) |>
-  filter(highest != "Total - Highest certificate, diploma or degree")|>
+         value   = VALUE)|>
   mutate(noc = str_replace(noc, "^(.{5})", "\\1:"),
          noc = str_replace(noc, "Seniors", "Senior")
          )|>
@@ -252,43 +251,162 @@ stopifnot(identical(table(noc_edu_spec$`Based on Occupation Education Specificit
 
 #lift--------------------------------------------------
 
-
 cells <- cip_noc|>
   unite(education, highest, cip, sep=": ")|>
   rename(count=value,
          occupation=noc)
 
+grand <- sum(cells$count)
+
 # education totals T_e  (denominator of the conditional)
 edu_tot <- cells |>
   group_by(education) |>
-  summarise(T_e = sum(count), .groups = "drop")
+  summarise(T_e = sum(count),
+            P_e = T_e / grand,
+            .groups = "drop")
 
 # occupation marginal P(n)  (the prior AND the lift denominator)
 # computed from the SAME table's grand total
-grand <- sum(cells$count)
+
 occ_marg <- cells |>
   group_by(occupation) |>
-  summarise(P_n = sum(count) / grand, .groups = "drop")
+  summarise(T_n = sum(count),
+            P_n = T_n / grand, .groups = "drop")
+
 
 # assemble and shrink
 alpha <- 15   # prior strength, fixed in advance
+tau <- 2   # primary activation threshold on log_lift; adjust to your value
 
 lift_tbl <- cells |>
   left_join(edu_tot,  by = "education") |>
   left_join(occ_marg, by = "occupation") |>
   mutate(
-    # Dirichlet-smoothed P(n|e) with prior = marginal P_n
-    P_n_given_e = (count + alpha * P_n) / (T_e + alpha),
+    P_n_given_e = (count + alpha * P_n) / (T_e + alpha),# Dirichlet-smoothed P(n|e) with prior = marginal P_n
     lift        = P_n_given_e / P_n,
-    log_lift = log(lift)
-  )|>
-  filter(count >= 30)|>
+    log_lift = log(lift),
+    log_P_n         = log(P_n),
+    log_P_n_given_e = log(P_n_given_e),
+    P_e_given_n     = count / T_n
+  )
+
+######################
+
+#if floor were 200 rather than 100, we would lose 2% of those with lift greater than tau.
+# Restricted to ACTIVATED cells, since only those enter the non-local sample.
+
+lift_tbl |>
+  filter(count >= 100, log_lift > tau) |>          # activated cells above floor
+  summarise(
+    people_activated_total = sum(count),
+    people_lost_100_200    = sum(count[count < 200]),
+    share_lost             = people_lost_100_200 / people_activated_total
+  )
+
+hist(lift_tbl$log_lift, breaks =100)
+
+#'the histogram says 100 isn't too low, the 2% says 200 isn't worth the cost,
+#'so 100 is the right fixed value and no sweep is needed. Neither alone is
+#'sufficient — the histogram without the loss figure invites "be conservative,
+#' go to 200," and the loss figure without the histogram invites
+#' "how do you know 100 isn't already too noisy."
+
+
+
+
+
+
+#diagnosis: include spec without destination remoteness?--------------
+
+dest_tbl <- cells |>
+  left_join(edu_tot,  by = "education") |>
+  left_join(occ_marg, by = "occupation") |>
+  mutate(P_e_given_n = count / T_n) |>
+  group_by(occupation) |>
+  summarise(
+    log_P_n = first(log(P_n)),
+    kl_raw  = sum(P_e_given_n * log(P_e_given_n / P_e)),
+    .groups = "drop"
+  )
+
+with(dest_tbl, cor(log_P_n, kl_raw)) # -0.2217078 rarer occupations more narrowly fed.
+
+for_diagnostic <- skill_dist_raw|>
+  as.data.frame()|>
+ # rownames_to_column("origin")|>
+  pivot_longer(cols=everything(), names_to = "occupation", values_to = "distance")|>
+  filter(distance>0)|>
+  group_by(occupation)|>
+  summarize(mean_log_distance=mean(log(distance)))|>
+  inner_join(dest_tbl)|>
+  column_to_rownames("occupation")
+
+model <- lm(mean_log_distance~log_P_n+kl_raw, data=for_diagnostic)
+
+# ---------------------------------------------------------------------------
+# DIAGNOSTIC: does destination remoteness absorb the components of lift?
+#
+# Lift decomposes exactly: log m(e,n) = log P(n|e) - log P(n), a concentration
+# term and a rarity term. The question this regression settles is whether the
+# remoteness control r_j in the non-local model (eq-lift) is a nuisance control
+# or is partly absorbing the mechanism itself.
+#
+# Two readings of lift are in play. Under the realized-path reading (the one
+# the paper adopts), lift scores the education-destination pair actually
+# traversed, and a destination can be remote for reasons unconnected to
+# credentials -- an idiosyncratic skill profile -- so r_j removes a genuine
+# confound. Under an increment-specificity reading, remoteness would instead be
+# a signature of the mechanism, and conditioning on r_j would partial out the
+# wormhole's own footprint. The two are not distinguishable by inspecting r_j,
+# which is a destination-level average and absorbs both sources alike.
+#
+# They ARE distinguishable in public data, which is why this runs pre-VDL.
+# Bring both components of lift to destination level across the 498 NOCs:
+#   rarity        = log P(n)
+#   concentration = unresidualized KL divergence of P(education|NOC) from the
+#                   education margin
+# Concentration is deliberately NOT the size-residualized OES of sec-cf: OES has
+# log(T) partialled out, and log(T) is close to log P(n) up to the fixed total,
+# so using OES would render the two regressors near-orthogonal by construction
+# and manufacture the answer.
+#
+# Both terms are computed PRE-FILTER. The reliability floor applies where a cell
+# is read individually as lift, not where cells are aggregated -- filtering
+# first truncates each occupation's education distribution and inflates the
+# divergence, more for occupations fed by many small streams than by a few large
+# ones, which is a bias in exactly the dimension being measured.
+#
+# RESULT: both components enter positively and are individually distinguishable
+# from zero, but jointly explain ~5% of the variation in r_j, and rarity enters
+# with the sign OPPOSITE to the increment-specificity prediction (more common
+# occupations are marginally the more remote). The largest positive residuals
+# are skill-idiosyncratic occupations rather than credential-gated ones -- air
+# pilots, dancers, other performers, none narrowly fed. The highest-leverage
+# observations (senior managers, general practitioners) sit near zero residual,
+# so the fit is not driven by the extremes.
+#
+# CONCLUSION: r_j is included in EVERY specification of the non-local model; no
+# with-and-without pair is estimated. What the control absorbs is overwhelmingly
+# skill-space position unrelated to the education table, which is the confound
+# the realized-path reading names. The decision rests on the weakness of the
+# relationship (~5% explained), not on the significance of the coefficients --
+# at n = 498, statistical detectability and explanatory relevance come apart,
+# and it is the latter that bears on whether the control is mechanism-laden.
+#
+# Residual ambiguity is not eliminated: 5% is not zero, so gamma retains
+# whatever mechanism-through-remoteness it carries. beta is therefore read as
+# the narrow channeling estimate, not as the broader claim that credentials open
+# paths to otherwise-unreachable occupations. See sec-non_local.
+# ---------------------------------------------------------------------------
+
+large_lift_tbl <- lift_tbl|>
+  filter(count >= 100)|>
   arrange(desc(lift))
 
-slice_max(lift_tbl, order_by = log_lift)
-slice_min(lift_tbl, order_by = log_lift)
+slice_max(large_lift_tbl, order_by = log_lift)
+slice_min(large_lift_tbl, order_by = log_lift)
 
-compare_lift <- lift_tbl|>
+compare_lift <- large_lift_tbl|>
   mutate(broad=str_sub(occupation,1,1))|>
   filter(broad %in% c(6,2))
 

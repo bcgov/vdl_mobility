@@ -1,0 +1,214 @@
+---
+title: "Occupational Mobility Is Not One Thing: Evidence from the Canadian Labour Market"
+subtitle: "RESULTS-PAPER SKELETON — write toward this once VDL data lands"
+author: "Richard Martin"
+date: today
+format:
+  pdf:
+    number-sections: true
+---
+
+<!--
+========================================================================
+HOW TO USE THIS FILE
+========================================================================
+This is a TARGET, not a draft. It is the linear results paper the
+pre-registration (05_paper.qmd) is scaffolding for. The pre-reg reads
+like a legal brief because it must pre-litigate every objection BEFORE
+the data. The results paper carries none of that burden. Three moves
+shed ~a third to half the pre-reg's text:
+
+  1. DROP the branching. The contingency tree, "if the diagonal doesn't
+     hold", persistence-vs-collapse, calibration pass/fail, the tau
+     sweep — all branch on unknowns. The results paper walks ONE
+     realized branch. Report the path taken; drop the other three.
+
+  2. RESULTS not PROMISES. "X is predicted to fall below independence,
+     and here is the elaborate reason that is the right test" becomes
+     "X falls below independence (Table N)." The justification for the
+     test compresses to a sentence because the reader sees it worked.
+
+  3. RELOCATE the defenses. Confound discharges (forward-drift,
+     selection-symmetry, differential-contamination) move to a lean
+     Limitations section AND to the pre-reg-as-appendix-of-record. Do
+     NOT delete them — CITE them. The pre-registration is your answer
+     to the "went in with a knife" referee; the results paper must
+     POINT BACK to it. The slog becomes the record the clean paper
+     leans on.
+
+RULE OF THUMB per section below:
+  [KEEP]      survives largely intact
+  [COMPRESS]  N paragraphs -> N sentences once it's a result
+  [RELOCATE]  moves to Limitations or cites the pre-reg
+  [DROP]      pre-reg-only scaffolding the results retire
+  [NEW]       the actual results — the only genuinely new writing
+========================================================================
+-->
+
+# Introduction
+
+<!--
+[KEEP] the linear spine — this is already the clean argument, currently
+buried under per-step robustness interruptions. State it straight:
+  - education sorts workers into occupations by specificity
+  - the specificity of the DESTINATION governs which geometry rules
+    subsequent LOCAL moves (skill / hierarchy / binary)
+  - => three regimes, three policy levers
+  - the wormhole: non-local mobility links education-specificity (EOS)
+    to occupation-specificity (OES); it is the mechanism that SETS the
+    specificity the local story then conditions on.
+[COMPRESS] the "which geometry governs" framing — one paragraph, not the
+current extended setup.
+[NEW] one paragraph of headline findings, present tense, up front.
+[DROP] the pre-registration notice (or reduce to one line: "design
+pre-registered prior to VDL access; see [pre-reg citation]").
+[RELOCATE] the local/non-local mechanism justification -> it becomes a
+result in the body; here just assert it and forward-reference.
+-->
+
+# Data
+
+<!--
+[KEEP] public inputs (census 98-10-0404-01), the O*NET->NOC crosswalk
+summary, the 498-occupation universe, the linked-file description.
+[COMPRESS] the CIP-NA / measurement-complete argument -> one or two
+sentences (it's a data-handling fact, not a live controversy once done).
+[NEW] realized linkage rate, realized missingness, the actual sample
+sizes per regime — the [PLACEHOLDER]s in the pre-reg get filled here.
+[RELOCATE] the independence-of-the-two-sources circularity argument
+(pre-reg 6.3) -> Limitations or a footnote citing the pre-reg.
+[DROP] the fits-count bookkeeping (12 global / 36 sub-regime) as
+NARRATIVE — becomes table structure, not prose.
+-->
+
+# The Specificity Partition
+
+<!--
+[KEEP] OES definition, the three sub-regimes, the human-capital-
+specificity logic (Becker), the TEER robustness partition.
+[COMPRESS HARD] the regime-partition MECHANISM section (pre-reg §2) is
+the single biggest compression target. Its proxy-error / reclassification
+/ latent-activation machinery exists to DEFEND the local/non-local split
+in advance. Once the split is made and the lift-reclassification is run,
+this becomes: "we partition on the operative education increment
+(details, pre-reg §2); the lift-based reclassification moves N workers
+(Table)." The full apparatus RELOCATES to the pre-reg citation.
+[NEW] realized OES distribution, the actual sub-regime assignments,
+the OES-TEER agreement (kappa) as a NUMBER not a prediction.
+-->
+
+# Local Mobility: Which Geometry Governs
+
+<!--
+This is the heart, and where "results not promises" saves the most.
+
+[KEEP] the EROT horse-race setup, the two-criteria (KL + CWTVD-family)
+adjudication, the 10% rule — but as METHOD stated once, tightly.
+[COMPRESS] the below-independence out-of-regime METHOD -> a paragraph;
+the reader will SEE it discriminate in the tables.
+[DROP] the entire "If a clear winner appears" contingency tree. You know
+which branch happened. Walk it.
+[DROP] the pre-reg's five committed global predictions AS PREDICTIONS ->
+they become results read off one table.
+
+[NEW] THE RESULTS, in linear order:
+  - Global race: report the realized outcome (likely no pooled winner ->
+    one sentence motivating the partition; if a winner appeared, the
+    contingency-tree branch you actually walk, stated as fact).
+  - The 3x3 within-local grid (Axis one): the dissociation table.
+    Diagonal wins, off-diagonal fails — as RESULTS.
+  - The origin-stripped non-local grid (Axis two): graded governors
+    collapse below independence; binary persists. As RESULTS.
+  - The proxy-vs-rescued contrast: what the lift adjustment did.
+  - Age extension, TEER check: brief, as confirmatory results.
+[RELOCATE] selection-symmetry scope condition, differential-contamination
+-> Limitations, citing pre-reg.
+-->
+
+# Non-Local Mobility: The Wormhole
+
+<!--
+[KEEP] EOS-OES gap definition, the within-worker stacked spec, the
+two-panel display.
+[COMPRESS] the timing/identification argument (gap differences out a
+time-invariant disposition) -> a tight paragraph; the forward-drift
+discharge RELOCATES to Limitations + pre-reg cite.
+[NEW] the realized gap estimate + inference; the matching-validation
+(high-lift vs baseline-lift split); the cross-sample falsification
+(local movers collapse) as a RESULT; the tau-sweep as a single robustness
+line + appendix, not a committed-prediction narrative.
+[DROP] the "we commit to" framing throughout — these are findings now.
+-->
+
+# Results
+
+<!--
+NOTE: in the pre-reg, Results is a placeholder. In the results paper,
+results are DISTRIBUTED into the two mobility sections above (report each
+finding where its method was just stated), OR consolidated here. Decide
+at draft time. Distributed usually reads more linearly — method, then
+its result, then next method. A standalone Results section tends to
+recreate the two-pass structure that makes the pre-reg a slog.
+RECOMMENDATION: distribute. Delete this standalone section.
+-->
+
+# Policy Implications
+
+<!--
+[KEEP] the three-levers argument (Skill->reskilling, Hierarchy->within-
+silo/bridging, Binary->program capacity + immigration). This is the
+general-interest payload and it's already clean.
+[COMPRESS] tie each lever to its NOW-CONFIRMED regime in one line each.
+[NEW] anchor the levers to realized regime sizes / shortage-relevant
+occupations if the data supports naming any.
+-->
+
+# Limitations
+
+<!--
+This section GROWS relative to the pre-reg's, because it's where the
+relocated confound-defenses land — but each arrives SHORT, addressed by
+evidence rather than argued at length:
+  - selection into retraining on unobserved propensity (the one
+    undischarged assumption) — state it, cite pre-reg §2.2 for the full
+    treatment, note the local-mover falsification result that bounds it.
+  - forward-drift — one sentence: local-mover collapse rules out the
+    symmetric version; cite pre-reg §8.
+  - JOB-RELEVANT-MISREPORT (STILL UNDRAFTED in pre-reg — open thread D):
+    the one non-conservative bias. MUST be written for the results paper
+    regardless. Draft it here when tackling limitations.
+  - external validity (low-attachment exclusion), path-specific wage
+    differentials as alternative-mechanism-not-confound.
+[RELOCATE-IN] everything the pre-reg argues pre-emptively that the data
+now speaks to.
+-->
+
+# Conclusion
+
+<!--
+[KEEP + soften] "no single geometry governs WITHIN REGIMES" — the
+compositional caveat if a global winner appeared.
+[NEW] what was found, one tight paragraph.
+-->
+
+<!--
+========================================================================
+APPENDIX / POINTER STRATEGY
+========================================================================
+The pre-registration (05_paper.qmd) becomes the APPENDIX OF RECORD, cited
+throughout. Everything the results paper compresses or relocates lives
+there in full:
+  - full regime-partition proxy-error machinery (pre-reg §2)
+  - CWTVD resolving-power simulation (pre-reg App C)
+  - sparse-cell calibration + power (pre-reg App E)
+  - lift construction (pre-reg App B)
+  - threshold sensitivity (pre-reg App D)
+  - the O*NET->NOC crosswalk (pre-reg App A + the separate crosswalk repo)
+  - the contingency tree (pre-reg §7 global subsection) — cite it as
+    "pre-committed reading of outcomes", proof you didn't post-hoc it.
+
+The pre-reg's DENSITY is the asset: every objection is answered somewhere
+citable, so the results paper doesn't re-argue — it points. That's the
+whole payoff of having pre-registered.
+========================================================================
+-->

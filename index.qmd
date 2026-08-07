@@ -30,7 +30,6 @@ source(here("R", "other.R"))
 ```{r load-data, include=FALSE}
 k_vs_spearman    <- read_rds(here("out", "k_vs_spearman.rds"))
 hier             <- read_rds(here("out", "hier_dist_raw.rds"))
-educ_specificity <- read_rds(here("out", "edu_noc_spec.rds"))
 noc_edu_spec  <- read_rds(here("out", "noc_edu_spec.rds"))
 calibration      <- read_rds(here("out", "calibration.rds"))
 skills_mat       <- read_rds(here("out", "skill_dist_raw.rds"))
@@ -55,19 +54,6 @@ dest_plt <- noc_edu_spec |>
 dest_spear <- round(cor(noc_edu_spec$T, noc_edu_spec$specificity, method = "spearman"), 2)
 dest_pear  <- round(cor(noc_edu_spec$T, noc_edu_spec$specificity), 2)
 
-spec_plt <- ggplot(educ_specificity, aes(T,
-                                         specificity,
-                                         fill = attain_bin,
-                                         text = paste0("CIP:", cip,
-                                                       "\n Highest:", highest))) +
-  scale_fill_viridis_d() +
-  geom_jitter(shape = 21, size = 1.5, stroke = .1) +
-  scale_x_log10(labels = scales::comma) +
-  labs(title = "Visibility of groups can be toggled by clicking legend below",
-       fill = NULL)
-
-spec_spear <- round(cor(educ_specificity$T, educ_specificity$specificity, method = "spearman"), 2)
-spec_pear  <- round(cor(educ_specificity$T, educ_specificity$specificity), 2)
 ```
 
 ## Overview {#sec-overview}
