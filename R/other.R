@@ -15,12 +15,14 @@ h_dist <- function(tbbl){
   tbbl |>
     mutate(teer_o = as.integer(str_sub(origin, 2, 2)),
            teer_d = as.integer(str_sub(destination, 2, 2)),
-           teer_gap = abs(teer_o - teer_d),
+           teer_gap = case_when(teer_d==0 & teer_o!=0 ~ 1, #if either teer0 and other not, teer_gap=1
+                                teer_d!=0 & teer_o==0 ~ 1,
+                                TRUE ~ abs(teer_o - teer_d)), #otherwise...
            dist = case_when(origin == destination ~ 0,
                             str_sub(origin,1,4) == str_sub(destination,1,4) ~ 1,
                             str_sub(origin,1,3) == str_sub(destination,1,3) ~ 2,
                             str_sub(origin,1,1) == str_sub(destination,1,1) ~ 3 + teer_gap,
-                            TRUE ~ 9))|>
+                            TRUE ~ 8))|>
     select(origin, destination, distance=dist)
 }
 
