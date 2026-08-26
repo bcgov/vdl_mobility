@@ -37,11 +37,10 @@ skills_raw_ord <- skill_dist_raw[skills_ord, skills_ord]
 skills_xlab <- as.character(colnames(skills_raw_ord))
 skills_ylab <- as.character(rownames(skills_raw_ord))
 dest_plt <- noc_edu_spec|>
-  ggplot(aes(T, specificity, text=noc, fill=sub_regime)) +
+  ggplot(aes(T, specificity, text=noc, fill=`Based on Occupation Education Specificity`)) +
   scale_fill_viridis_d()+
   geom_point(shape=21, size=3, stroke=.5) +
-  scale_x_log10(labels=scales::comma)+
-  labs(fill="Sub-regimes")
+  scale_x_log10(labels=scales::comma)
 ```
 
 ::: {style="text-align: center;"}
@@ -266,9 +265,9 @@ skills_heat |> plotly::layout(
 3.  First three digits match:
     -   distance = 2\
 4.  First digit matches:
-    -   distance = 3 + \|ΔTEER\|\
+    -   distance = 3 + TEER difference
 5.  Otherwise:
-    -   distance = 9\
+    -   distance = 8\
 :::
 
 ::: {.column width="70%"}
@@ -352,13 +351,11 @@ $$
 ```{r}
 #| out-width: 100%
 #| out-height: 100%
-#| fig-height: 5
+#| fig-height: 6
  sim_score_plots$global_measures+
-    theme(text=element_text(size=11))
+    theme(text=element_text(size=8))
 ```
 
-
-- The measures work when they should, and fail when they should not
 
 ## Occupation's Education Specificity
 
@@ -403,8 +400,7 @@ p
 #| fig-height: 8
 #| out-width: 100%
 sim_score_plots$sub_regime_measures+
-  labs(x = "\u03b5")+
-    theme(text=element_text(size=16))
+  theme(text=element_text(size=16))
 ```
 
 :::
@@ -545,23 +541,5 @@ The optimal solution:
 ```
 :::
 :::::
-
-## 2016 TEER mismatch {.smaller}
-
-- Apparent distance traveled might be implausible if 2016 occupation is inconsistent 
-with highest educational attainment
-
-- Admisible TEERs are the Target TEER $\pm1$ plus TEER 0 (management)
-
-| Highest attainment                                     | Target TEER| Admissible TEERs |
-|:-------------------------------------------------------|:-----------|:-----------------|
-| No certificate, diploma or degree                      | 5          | 4, 5, 0          |
-| Secondary (high) school diploma                        | 4          | 3, 4, 5, 0       |
-| Apprenticeship or trades certificate or diploma        | 3          | 2, 3, 4, 0       |
-| College / CEGEP / other non-university                 | 2          | 1, 2, 3, 0       |
-| University certificate or diploma below bachelor       | 2          | 1, 2, 3, 0       |
-| Bachelor’s degree                                      | 1          | 1, 2, 0          |
-| Above bachelor (Master’s, PhD, MD, etc.)               | 1          | 1, 2, 0          |
-
 
 ## References

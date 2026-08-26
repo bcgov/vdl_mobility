@@ -110,7 +110,7 @@ hier_dist_raw <- hier_dist_raw_long|>
 #sanity checks
 stopifnot(hier_dist_raw==t(hier_dist_raw))
 stopifnot(all(diag(hier_dist_raw) == 0))
-stopifnot(min(hier_dist_raw) == 0, max(hier_dist_raw) == 9)
+stopifnot(min(hier_dist_raw) == 0, max(hier_dist_raw) == 8)
 
 # binary distance------------------------------------------
 

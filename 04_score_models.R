@@ -33,7 +33,7 @@ sim_score_plots$global_measures <- global_measures|>
   geom_hline(yintercept = 1, colour="white",lwd=2)+
   geom_line()+
   geom_point()+
-  scale_x_continuous(trans="log10")+
+  scale_x_continuous(trans="log10", labels = scales::label_comma())+
   scale_y_continuous(transform = scales::pseudo_log_trans(sigma = .1, base = 2),
                      labels = scales::label_number())+
   facet_grid(Measure~dgp, scales="free_y")+
